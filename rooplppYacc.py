@@ -18,7 +18,7 @@ def p_classes(p):
 
 def p_class(p):
     '''
-    class : CLASS className 
+    class : CLASS className varDeclarations methods
     '''
 
 def p_className(p):
@@ -26,7 +26,6 @@ def p_className(p):
     className :  ID 
     '''
 
-"""
 def p_varDeclarations(p):
     '''
     varDeclarations : varDeclarations varDeclaration
@@ -38,6 +37,16 @@ def p_varDeclaration(p):
     varDeclaration : type varName 
     '''
 
+def p_type(p):
+    '''
+    type : INT 
+    | className
+    '''
+
+def p_varName(p):
+    '''
+    varName :  ID 
+    '''
 def p_methods(p):
     '''
     methods  : methods method 
@@ -50,18 +59,19 @@ def p_method(p):
     method : METHOD ID  LPAREN RPAREN COLON statements
     '''
 
-
 def p_statements(p):
     '''
-    statements : statement 
-    | statement statements
+    statements : statement statements
+    |
     '''
-
 
 def p_statement(p):
     '''
     statement : ID modOp exp
     '''
+
+
+
 
 def p_modOp(p):
     '''
@@ -80,20 +90,11 @@ def p_exp(p):
     '''
 
 
-def p_varName(p):
-    '''
-    varName :  ID 
-    '''
 
 
 
 
-def p_type(p):
-    '''
-    type : INT 
-    | className
-    '''
-
+"""
 """
 
 def yacc_test():

@@ -86,7 +86,6 @@ reserved = {
   'then'  : 'THEN',
   'else'  : 'ELSE',
   'while' : 'WHILE',
-  'main' : 'MAIN',
   'method' : 'METHOD',
   'int': 'INT',
 }
@@ -101,7 +100,7 @@ t_METHOD= 'method'
 t_IF= 'method'
 t_COLON = ':'
 t_ADD= r'\+'
-t_MODADD= r'\+='
+t_MODADD= r'\+\='
 t_MODSUB= r'-='
 t_MODXOR= r'^='
 t_SUB= r'-'
@@ -109,7 +108,7 @@ t_MUL= r'\*'
 t_DIV= r'/'
 t_LPAREN = r'\('
 t_RPAREN = r'\)'
-t_NUMBER = '[0-9.edED+-]+'
+t_NUMBER = '[1-9][0-9]*'
 t_LBRACE = '{'
 t_RBRACE = '}'
 # A string containing ignored characters (spaces and tabs)

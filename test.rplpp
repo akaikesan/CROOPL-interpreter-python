@@ -1,1 +1,15 @@
 class Program
+  int length
+
+  method main():
+    length  +=  1
+
+  method main():
+    length  +=  1
+
+class Program
+  int length
+  method main():
+    length  +=  1
+   
+
