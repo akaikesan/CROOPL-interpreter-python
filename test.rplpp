@@ -1,15 +1,13 @@
 class Program
   int length
+  TestClass tc
 
   method main():
-    length  +=  1
+    length += 1 + 1
 
-  method main():
-    length  +=  1
-
-class Program
+class TestClass 
   int length
-  method main():
-    length  +=  1
-   
 
+  method test():
+    length += 1 + 1
+    length += 1 + 2

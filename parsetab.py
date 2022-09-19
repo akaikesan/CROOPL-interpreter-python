@@ -6,9 +6,9 @@ _tabversion = '3.10'
 
 _lr_method = 'LALR'
 
-_lr_signature = 'ADD AND BAND BOR BREAK CALL CASE CLASS COLON COMMA CONST CONSTRUCT COPY DEFAULT DELETE DELOCAL DESTRUCT DIV DIVIDE DO DOT ECASE ELSE END EOF EQ ESAC FCASE FI FOR FROM GE GT HCTIWS ID IF IN INHERITS INT LBRA LBRACE LE LOCAL LOOP LPAREN LT METHOD MINUS MOD MODADD MODSUB MODXOR MUL NE NEW NIL NUMBER OR PLUS PRINT RBRA RBRACE RPAREN SHOW SKIP STRING SUB SWAP SWITCH THEN TIMES UNCALL UNCOPY UNTIL WCOLON WDOT XOR\n    program :  classes\n    \n    classes : classes class\n    | \n    \n    class : CLASS className varDeclarations methods\n    \n    className :  ID \n    \n    varDeclarations : varDeclarations varDeclaration\n    | \n    \n    varDeclaration : type varName \n    \n    type : INT \n    | className\n    \n    varName :  ID \n    \n    methods  : methods method \n    | \n    \n    method : METHOD ID  LPAREN RPAREN COLON statements\n    \n    statements : statement statements\n    |\n    \n    statement : ID modOp exp\n    \n    modOp : MODADD \n    | MODSUB \n    | MODXOR\n    \n    exp : NUMBER\n    | exp MUL exp\n    | exp DIV exp\n    | exp ADD exp\n    | exp SUB exp\n    '
+_lr_signature = 'ADD AND BAND BOR BREAK CALL CASE CLASS COLON COMMA CONST CONSTRUCT COPY DEFAULT DELETE DELOCAL DESTRUCT DIV DIVIDE DO DOT ECASE ELSE END EOF EQ ESAC FCASE FI FOR FROM GE GT HCTIWS ID IF IN INHERITS INT LBRA LBRACE LE LOCAL LOOP LPAREN LT METHOD MINUS MOD MODADD MODSUB MODXOR MUL NE NEW NIL NUMBER OR PLUS PRINT RBRA RBRACE RPAREN SHOW SKIP STRING SUB SWAP SWITCH THEN TIMES UNCALL UNCOPY UNTIL WCOLON WDOT XOR\n    program :  classes\n    \n    classes : classes class\n    | \n    \n    class : CLASS className varDeclarations methods\n    \n    className :  ID \n    \n    varDeclarations : varDeclarations varDeclaration\n    | \n    \n    varDeclaration : type varName \n    \n    type : INT \n    | className\n    \n    varName :  ID \n    \n    methods  : methods method \n    | \n    \n    method : METHOD ID  LPAREN RPAREN COLON statements\n    \n    statements :  statements statement\n    |\n    \n    statement : ID modOp exp\n    \n    modOp : MODADD \n    | MODSUB \n    | MODXOR\n    \n    exp : NUMBER\n    | exp MUL exp\n    | exp DIV exp\n    | exp ADD exp\n    | exp SUB exp\n    '
     
-_lr_action_items = {'CLASS':([0,2,3,5,6,7,9,10,13,15,16,20,22,23,28,29,30,35,36,37,38,],[-3,4,-2,-7,-5,-13,-4,-6,-12,-8,-11,-16,-14,-16,-15,-17,-21,-22,-23,-24,-25,]),'$end':([0,1,2,3,5,6,7,9,10,13,15,16,20,22,23,28,29,30,35,36,37,38,],[-3,0,-1,-2,-7,-5,-13,-4,-6,-12,-8,-11,-16,-14,-16,-15,-17,-21,-22,-23,-24,-25,]),'ID':([4,5,6,7,8,10,11,12,14,15,16,20,23,29,30,35,36,37,38,],[6,-7,-5,6,-10,-6,16,-9,17,-8,-11,21,21,-17,-21,-22,-23,-24,-25,]),'INT':([5,6,7,10,15,16,],[-7,-5,12,-6,-8,-11,]),'METHOD':([5,6,7,9,10,13,15,16,20,22,23,28,29,30,35,36,37,38,],[-7,-5,-13,14,-6,-12,-8,-11,-16,-14,-16,-15,-17,-21,-22,-23,-24,-25,]),'LPAREN':([17,],[18,]),'RPAREN':([18,],[19,]),'COLON':([19,],[20,]),'MODADD':([21,],[25,]),'MODSUB':([21,],[26,]),'MODXOR':([21,],[27,]),'NUMBER':([24,25,26,27,31,32,33,34,],[30,-18,-19,-20,30,30,30,30,]),'MUL':([29,30,35,36,37,38,],[31,-21,31,31,31,31,]),'DIV':([29,30,35,36,37,38,],[32,-21,32,32,32,32,]),'ADD':([29,30,35,36,37,38,],[33,-21,33,33,33,33,]),'SUB':([29,30,35,36,37,38,],[34,-21,34,34,34,34,]),}
+_lr_action_items = {'CLASS':([0,2,3,5,6,7,9,10,13,15,16,20,21,23,28,29,34,35,36,37,],[-3,4,-2,-7,-5,-13,-4,-6,-12,-8,-11,-16,-14,-15,-17,-21,-22,-23,-24,-25,]),'$end':([0,1,2,3,5,6,7,9,10,13,15,16,20,21,23,28,29,34,35,36,37,],[-3,0,-1,-2,-7,-5,-13,-4,-6,-12,-8,-11,-16,-14,-15,-17,-21,-22,-23,-24,-25,]),'ID':([4,5,6,7,8,10,11,12,14,15,16,20,21,23,28,29,34,35,36,37,],[6,-7,-5,6,-10,-6,16,-9,17,-8,-11,-16,22,-15,-17,-21,-22,-23,-24,-25,]),'INT':([5,6,7,10,15,16,],[-7,-5,12,-6,-8,-11,]),'METHOD':([5,6,7,9,10,13,15,16,20,21,23,28,29,34,35,36,37,],[-7,-5,-13,14,-6,-12,-8,-11,-16,-14,-15,-17,-21,-22,-23,-24,-25,]),'LPAREN':([17,],[18,]),'RPAREN':([18,],[19,]),'COLON':([19,],[20,]),'MODADD':([22,],[25,]),'MODSUB':([22,],[26,]),'MODXOR':([22,],[27,]),'NUMBER':([24,25,26,27,30,31,32,33,],[29,-18,-19,-20,29,29,29,29,]),'MUL':([28,29,34,35,36,37,],[30,-21,30,30,30,30,]),'DIV':([28,29,34,35,36,37,],[31,-21,31,31,31,31,]),'ADD':([28,29,34,35,36,37,],[32,-21,32,32,32,32,]),'SUB':([28,29,34,35,36,37,],[33,-21,33,33,33,33,]),}
 
 _lr_action = {}
 for _k, _v in _lr_action_items.items():
@@ -17,7 +17,7 @@ for _k, _v in _lr_action_items.items():
       _lr_action[_x][_k] = _y
 del _lr_action_items
 
-_lr_goto_items = {'program':([0,],[1,]),'classes':([0,],[2,]),'class':([2,],[3,]),'className':([4,7,],[5,8,]),'varDeclarations':([5,],[7,]),'methods':([7,],[9,]),'varDeclaration':([7,],[10,]),'type':([7,],[11,]),'method':([9,],[13,]),'varName':([11,],[15,]),'statements':([20,23,],[22,28,]),'statement':([20,23,],[23,23,]),'modOp':([21,],[24,]),'exp':([24,31,32,33,34,],[29,35,36,37,38,]),}
+_lr_goto_items = {'program':([0,],[1,]),'classes':([0,],[2,]),'class':([2,],[3,]),'className':([4,7,],[5,8,]),'varDeclarations':([5,],[7,]),'methods':([7,],[9,]),'varDeclaration':([7,],[10,]),'type':([7,],[11,]),'method':([9,],[13,]),'varName':([11,],[15,]),'statements':([20,],[21,]),'statement':([21,],[23,]),'modOp':([22,],[24,]),'exp':([24,30,31,32,33,],[28,34,35,36,37,]),}
 
 _lr_goto = {}
 for _k, _v in _lr_goto_items.items():
@@ -27,29 +27,29 @@ for _k, _v in _lr_goto_items.items():
 del _lr_goto_items
 _lr_productions = [
   ("S' -> program","S'",1,None,None,None),
-  ('program -> classes','program',1,'p_program','rooplppYacc.py',10),
-  ('classes -> classes class','classes',2,'p_classes','rooplppYacc.py',15),
-  ('classes -> <empty>','classes',0,'p_classes','rooplppYacc.py',16),
-  ('class -> CLASS className varDeclarations methods','class',4,'p_class','rooplppYacc.py',21),
-  ('className -> ID','className',1,'p_className','rooplppYacc.py',26),
-  ('varDeclarations -> varDeclarations varDeclaration','varDeclarations',2,'p_varDeclarations','rooplppYacc.py',31),
-  ('varDeclarations -> <empty>','varDeclarations',0,'p_varDeclarations','rooplppYacc.py',32),
-  ('varDeclaration -> type varName','varDeclaration',2,'p_varDeclaration','rooplppYacc.py',37),
-  ('type -> INT','type',1,'p_type','rooplppYacc.py',42),
-  ('type -> className','type',1,'p_type','rooplppYacc.py',43),
-  ('varName -> ID','varName',1,'p_varName','rooplppYacc.py',48),
-  ('methods -> methods method','methods',2,'p_methods','rooplppYacc.py',52),
-  ('methods -> <empty>','methods',0,'p_methods','rooplppYacc.py',53),
-  ('method -> METHOD ID LPAREN RPAREN COLON statements','method',6,'p_method','rooplppYacc.py',59),
-  ('statements -> statement statements','statements',2,'p_statements','rooplppYacc.py',64),
-  ('statements -> <empty>','statements',0,'p_statements','rooplppYacc.py',65),
-  ('statement -> ID modOp exp','statement',3,'p_statement','rooplppYacc.py',70),
-  ('modOp -> MODADD','modOp',1,'p_modOp','rooplppYacc.py',78),
-  ('modOp -> MODSUB','modOp',1,'p_modOp','rooplppYacc.py',79),
-  ('modOp -> MODXOR','modOp',1,'p_modOp','rooplppYacc.py',80),
-  ('exp -> NUMBER','exp',1,'p_exp','rooplppYacc.py',85),
-  ('exp -> exp MUL exp','exp',3,'p_exp','rooplppYacc.py',86),
-  ('exp -> exp DIV exp','exp',3,'p_exp','rooplppYacc.py',87),
-  ('exp -> exp ADD exp','exp',3,'p_exp','rooplppYacc.py',88),
-  ('exp -> exp SUB exp','exp',3,'p_exp','rooplppYacc.py',89),
+  ('program -> classes','program',1,'p_program','rooplppYacc.py',11),
+  ('classes -> classes class','classes',2,'p_classes','rooplppYacc.py',16),
+  ('classes -> <empty>','classes',0,'p_classes','rooplppYacc.py',17),
+  ('class -> CLASS className varDeclarations methods','class',4,'p_class','rooplppYacc.py',22),
+  ('className -> ID','className',1,'p_className','rooplppYacc.py',31),
+  ('varDeclarations -> varDeclarations varDeclaration','varDeclarations',2,'p_varDeclarations','rooplppYacc.py',37),
+  ('varDeclarations -> <empty>','varDeclarations',0,'p_varDeclarations','rooplppYacc.py',38),
+  ('varDeclaration -> type varName','varDeclaration',2,'p_varDeclaration','rooplppYacc.py',43),
+  ('type -> INT','type',1,'p_type','rooplppYacc.py',48),
+  ('type -> className','type',1,'p_type','rooplppYacc.py',49),
+  ('varName -> ID','varName',1,'p_varName','rooplppYacc.py',54),
+  ('methods -> methods method','methods',2,'p_methods','rooplppYacc.py',58),
+  ('methods -> <empty>','methods',0,'p_methods','rooplppYacc.py',59),
+  ('method -> METHOD ID LPAREN RPAREN COLON statements','method',6,'p_method','rooplppYacc.py',72),
+  ('statements -> statements statement','statements',2,'p_statements','rooplppYacc.py',79),
+  ('statements -> <empty>','statements',0,'p_statements','rooplppYacc.py',80),
+  ('statement -> ID modOp exp','statement',3,'p_statement','rooplppYacc.py',89),
+  ('modOp -> MODADD','modOp',1,'p_modOp','rooplppYacc.py',98),
+  ('modOp -> MODSUB','modOp',1,'p_modOp','rooplppYacc.py',99),
+  ('modOp -> MODXOR','modOp',1,'p_modOp','rooplppYacc.py',100),
+  ('exp -> NUMBER','exp',1,'p_exp','rooplppYacc.py',105),
+  ('exp -> exp MUL exp','exp',3,'p_exp','rooplppYacc.py',106),
+  ('exp -> exp DIV exp','exp',3,'p_exp','rooplppYacc.py',107),
+  ('exp -> exp ADD exp','exp',3,'p_exp','rooplppYacc.py',108),
+  ('exp -> exp SUB exp','exp',3,'p_exp','rooplppYacc.py',109),
 ]
