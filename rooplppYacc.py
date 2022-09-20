@@ -3,6 +3,7 @@
 import ply.yacc as yacc
 
 from rooplppLexer import tokens
+from rooplppEval import evalProg  
 
 classMap = {} 
 
@@ -93,11 +94,22 @@ def p_statements(p):
         statements.append(p[2]) 
         p[0] = statements
 
+
 def p_statement(p):
     '''
     statement : ID modOp exp
+    | NEW type ID
+    | CALL ID WCOLON ID LPAREN RPAREN
+    | UNCALL ID WCOLON ID LPAREN RPAREN
     '''
-    p[0] = [p[1], p[2], p[3]]
+    if len(p) == 4:
+        if p[1] == 'new':
+            p[0] = [p[1], p[2], p[3]]
+        else:
+            p[0] = [p[2], p[1], p[3]]
+    elif len(p) == 7:
+        p[0] = [p[1],p[2], p[4]]
+
 
 
 
@@ -146,8 +158,9 @@ def yacc_test():
 
     parser = yacc.yacc()
     result = parser.parse(data)
+    evalProg(classMap)
+    
     print('result: ', result)
-    print(classMap)
 
 
 if __name__ == '__main__':

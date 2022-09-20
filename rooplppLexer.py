@@ -82,12 +82,15 @@ tokens = (
 
 reserved = {
   'class' : 'CLASS',
+  'new' : 'NEW',
   'if'    : 'IF',
   'then'  : 'THEN',
   'else'  : 'ELSE',
   'while' : 'WHILE',
   'method' : 'METHOD',
   'int': 'INT',
+  'call': 'CALL',
+  'uncall': 'UNCALL',
 }
 
 def t_ID(t):
@@ -95,10 +98,27 @@ def t_ID(t):
     t.type = reserved.get(t.value, 'ID')
     return t
 
+def t_NEW(t):
+    r'new'
+    t.type = reserved.get(t.value, 'NEW')
+    return t
+
+def t_CALL(t):
+    r'call'
+    t.type = reserved.get(t.value, 'CALL')
+    return t
+
+def t_UNCALL(t):
+    r'uncall'
+    t.type = reserved.get(t.value, 'UNCALL')
+    return t
+
+
 t_CLASS= 'class'
 t_METHOD= 'method'
-t_IF= 'method'
+t_IF= 'if'
 t_COLON = ':'
+t_WCOLON = '::'
 t_ADD= r'\+'
 t_MODADD= r'\+='
 t_MODSUB= r'-='

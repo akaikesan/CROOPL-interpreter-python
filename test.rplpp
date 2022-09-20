@@ -1,9 +1,13 @@
 class Program
   int length
+  int l
   TestClass tc
 
   method main():
+    new TestClass tc
+    call tc::test()
     length += 1 + 1
+    length += 1 + 2
 
 class TestClass 
   int length
