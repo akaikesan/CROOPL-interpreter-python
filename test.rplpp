@@ -2,24 +2,42 @@ class Program
   int length
   int l
   TestClass tc
+  TestClass2 tc2
 
   method main():
     new TestClass tc
+    new TestClass2 tc2
     call tc::test2()
-    uncall tc::test2()
+
+
+class TestClass2
+  int test
+
+  method plus(int ab):
+    ab += 1
 
 
 class TestClass 
   int length
   int l
 
-  method test(int a , int b):
-    a += 1 + 2
+  method test(int b):
     b -= 3
 
   method test2():
-    if length then 
+    if length = 0 & 0 = 0 then 
       l += 1
     else
       l -= 1
     fi l = 1 
+
+  method test3():
+    from length = 0 
+    do 
+      length += 1
+      length += 1
+    loop l+=1
+    until length = 10
+
+  method test4(TestClass2 tc2):
+    call tc2::plus(length)

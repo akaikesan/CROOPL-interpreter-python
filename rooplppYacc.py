@@ -30,7 +30,7 @@ def p_class(p):
 
 def p_className(p):
     '''
-    className :  ID
+    className : ID
     '''
     p[0] = p[1]
 
@@ -179,6 +179,7 @@ def p_statement(p):
     | CALL ID WCOLON ID LPAREN anyIds RPAREN
     | UNCALL ID WCOLON ID LPAREN anyIds RPAREN
     | IF exp THEN statements ELSE statements FI exp
+    | FROM exp DO statements LOOP statements UNTIL exp
     '''
     if len(p) == 4:
         if p[1] == 'new':
@@ -211,6 +212,13 @@ def p_number(p):
     '''
     p[0] = [p[1]]
 
+precedence = (
+    ('left', 'AND'),
+    ('left', 'XOR'),
+    ('nonassoc', 'EQ', 'NEQ'),
+    ('left', 'ADD', 'SUB'),
+    ('left', 'MUL', 'DIV', 'MOD'),
+)
 
 def p_exp(p):
     '''
@@ -221,6 +229,8 @@ def p_exp(p):
     | exp ADD exp
     | exp SUB exp
     | exp EQ exp
+    | exp NEQ exp
+    | exp AND exp
     '''
 
     if (len(p) == 2):
@@ -236,8 +246,12 @@ def p_exp(p):
             p[0] = [p[1], "/", p[3]]
         elif p[2] == '%':
             p[0] = [p[1], "%", p[3]]
+        elif p[2] == '&':
+            p[0] = [p[1], "&", p[3]]
         elif p[2] == '=':
             p[0] = [p[1], "=", p[3]]
+        elif p[2] == '!=':
+            p[0] = [p[1], "!=", p[3]]
 
 
 def yacc_test():

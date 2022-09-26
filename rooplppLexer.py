@@ -15,6 +15,7 @@ tokens = (
     'GT',
     'GE',
     'EQ',
+    'NEQ',
     'NE',
     'BAND',
     'XOR',
@@ -23,12 +24,10 @@ tokens = (
     'OR',
     'SWAP',
     'COMMA',
-    'WDOT',
     'WCOLON',
     'MODADD',
     'MODSUB',
     'MODXOR',
-    'DOT',
     'COLON',
     'LPAREN',
     'RPAREN',
@@ -81,75 +80,114 @@ tokens = (
 )
 
 reserved = {
-  'class' : 'CLASS',
-  'new' : 'NEW',
-  'if'    : 'IF',
-  'fi'    : 'FI',
-  'then'  : 'THEN',
-  'else'  : 'ELSE',
-  'while' : 'WHILE',
-  'method' : 'METHOD',
-  'int': 'INT',
-  'call': 'CALL',
-  'uncall': 'UNCALL',
+    'class': 'CLASS',
+    'new': 'NEW',
+    'from': 'FROM',
+    'if': 'IF',
+    'do': 'DO',
+    'loop': 'LOOP',
+    'until': 'UNTIL',
+    'fi': 'FI',
+    'then': 'THEN',
+    'else': 'ELSE',
+    'while': 'WHILE',
+    'method': 'METHOD',
+    'int': 'INT',
+    'call': 'CALL',
+    'uncall': 'UNCALL',
 }
+
 
 def t_ID(t):
     r'[a-zA-Z][a-zA-Z0-9]*'
     t.type = reserved.get(t.value, 'ID')
     return t
 
+
 def t_NEW(t):
     r'new'
     t.type = reserved.get(t.value, 'NEW')
     return t
+
 
 def t_CALL(t):
     r'call'
     t.type = reserved.get(t.value, 'CALL')
     return t
 
+
 def t_UNCALL(t):
     r'uncall'
     t.type = reserved.get(t.value, 'UNCALL')
     return t
+
 
 def t_ELSE(t):
     r'else'
     t.type = reserved.get(t.value, 'ELSE')
     return t
 
+
 def t_FI(t):
     r'fi'
     t.type = reserved.get(t.value, 'FI')
     return t
+
 
 def t_IF(t):
     r'if'
     t.type = reserved.get(t.value, 'IF')
     return t
 
+
 def t_THEN(t):
     r'then'
     t.type = reserved.get(t.value, 'THEN')
     return t
 
-t_CLASS= 'class'
-t_COMMA= ','
-t_METHOD= 'method'
+
+def t_FROM(t):
+    r'from'
+    t.type = reserved.get(t.value, 'FROM')
+    return t
+
+
+def t_DO(t):
+    r'do'
+    t.type = reserved.get(t.value, 'DO')
+    return t
+
+
+def t_LOOP(t):
+    r'loop'
+    t.type = reserved.get(t.value, 'loop')
+    return t
+
+
+def t_UNTIL(t):
+    r'until'
+    t.type = reserved.get(t.value, 'until')
+    return t
+
+
+t_CLASS = 'class'
+t_COMMA = ','
+t_METHOD = 'method'
 t_COLON = ':'
 t_WCOLON = '::'
-t_ADD= r'\+'
-t_MODADD= r'\+='
-t_MODSUB= r'-='
-t_MODXOR= r'^='
-t_EQ= r'='
-t_SUB= r'-'
-t_MUL= r'\*'
-t_DIV= r'/'
+t_ADD = r'\+'
+t_MODADD = r'\+='
+t_MODSUB = r'-='
+t_MODXOR = r'^='
+t_EQ = r'='
+t_NEQ = r'!='
+t_SUB = r'-'
+t_AND = r'&'
+t_MUL = r'\*'
+t_DIV = r'/'
 t_LPAREN = r'\('
 t_RPAREN = r'\)'
-t_NUMBER = '[1-9][0-9]*'
+t_NUMBER = r'(0 | [1-9][0-9]*)'
 t_LBRACE = '{'
 t_RBRACE = '}'
 # A string containing ignored characters (spaces and tabs)
