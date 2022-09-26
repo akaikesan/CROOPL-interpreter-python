@@ -84,6 +84,7 @@ reserved = {
   'class' : 'CLASS',
   'new' : 'NEW',
   'if'    : 'IF',
+  'fi'    : 'FI',
   'then'  : 'THEN',
   'else'  : 'ELSE',
   'while' : 'WHILE',
@@ -113,16 +114,36 @@ def t_UNCALL(t):
     t.type = reserved.get(t.value, 'UNCALL')
     return t
 
+def t_ELSE(t):
+    r'else'
+    t.type = reserved.get(t.value, 'ELSE')
+    return t
+
+def t_FI(t):
+    r'fi'
+    t.type = reserved.get(t.value, 'FI')
+    return t
+
+def t_IF(t):
+    r'if'
+    t.type = reserved.get(t.value, 'IF')
+    return t
+
+def t_THEN(t):
+    r'then'
+    t.type = reserved.get(t.value, 'THEN')
+    return t
 
 t_CLASS= 'class'
+t_COMMA= ','
 t_METHOD= 'method'
-t_IF= 'if'
 t_COLON = ':'
 t_WCOLON = '::'
 t_ADD= r'\+'
 t_MODADD= r'\+='
 t_MODSUB= r'-='
 t_MODXOR= r'^='
+t_EQ= r'='
 t_SUB= r'-'
 t_MUL= r'\*'
 t_DIV= r'/'

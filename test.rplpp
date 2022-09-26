@@ -5,13 +5,21 @@ class Program
 
   method main():
     new TestClass tc
-    call tc::test()
-    length += 1 + 1
-    length += 1 + 2
+    call tc::test2()
+    uncall tc::test2()
+
 
 class TestClass 
   int length
+  int l
 
-  method test():
-    length += 1 + 1
-    length += 1 + 2
+  method test(int a , int b):
+    a += 1 + 2
+    b -= 3
+
+  method test2():
+    if length then 
+      l += 1
+    else
+      l -= 1
+    fi l = 1 
