@@ -1,43 +1,82 @@
+
+class Cell
+    Cell next
+    int data
+
+    method constructor(int value)
+        data ^= value
+
+    method append(Cell cell)
+        if next = nil & cell != nil then
+            print cell != nil
+            print next 
+            print cell
+       
+      	    next <=> cell
+        else skip
+        fi next != nil & cell = nil
+        if next != nil then
+              call next::append(cell)
+          else skip
+        fi next != nil
+
+class LinkedList
+    Cell head
+    int listLength
+
+    method insertHead(Cell cellargs)
+        if head = nil & cellargs != nil then
+      	    head <=> cellargs
+        else skip
+        fi head != nil & cellargs = nil
+
+    method appendCell(Cell cell)
+      call insertHead(cell)
+
+    	if head != nil then
+      	    call head::append(cell)
+        else skip
+    	fi head != nil
+
+    	listLength += 1
+
+    method prependCell(Cell cell)
+        call insertHead(cell)
+
+    	if cell != nil & head != nil then
+      	    call cell::append(head)
+        else skip
+    	fi cell != nil & head = nil
+
+    	if cell != nil & head = nil then
+      	    cell <=> head
+        else skip
+    	fi cell = nil & head != nil
+
+    	listLength += 1
+
+    method length(int result)
+        result ^= listLength
+
 class Program
-  int length
-  int l
-  TestClass tc
-  TestClass2 tc2
+    LinkedList linkedList
+    int sumResult
+    int listLength
 
-  method main():
-    new TestClass tc
-    new TestClass2 tc2
-    call tc::test2()
+    method main()
+        new LinkedList linkedList
+        listLength +=  10
 
+        local int x = 0 
+          from x = 0 do
+            skip
+          loop
+              local Cell cell = nil
+              new Cell cell
+              call cell::constructor(x)
+              call linkedList::appendCell(cell)
+              delocal Cell cell = nil
+              x += 1
+          until x = listLength
+        delocal int x = listLength
 
-class TestClass2
-  int test
-
-  method plus(int ab):
-    ab += 1
-
-
-class TestClass 
-  int length
-  int l
-
-  method test(int b):
-    b -= 3
-
-  method test2():
-    if length = 0 & 0 = 0 then 
-      l += 1
-    else
-      l -= 1
-    fi l = 1 
-
-  method test3():
-    from length = 0 
-    do 
-      length += 1
-      length += 1
-    loop l+=1
-    until length = 10
-
-  method test4(TestClass2 tc2):
-    call tc2::plus(length)

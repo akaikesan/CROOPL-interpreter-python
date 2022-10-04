@@ -81,6 +81,8 @@ tokens = (
 
 reserved = {
     'class': 'CLASS',
+    'print': 'PRINT',
+    'skip': 'SKIP',
     'new': 'NEW',
     'from': 'FROM',
     'if': 'IF',
@@ -95,6 +97,9 @@ reserved = {
     'int': 'INT',
     'call': 'CALL',
     'uncall': 'UNCALL',
+    'local': 'LOCAL',
+    'delocal': 'DELOCAL',
+    'nil': 'NIL',
 }
 
 
@@ -109,6 +114,15 @@ def t_NEW(t):
     t.type = reserved.get(t.value, 'NEW')
     return t
 
+def t_SKIP(t):
+    r'skip'
+    t.type = reserved.get(t.value, 'SKIP')
+    return t
+
+def t_NIL(t):
+    r'nil'
+    t.type = reserved.get(t.value, 'NIL')
+    return t
 
 def t_CALL(t):
     r'call'
@@ -171,6 +185,7 @@ def t_UNTIL(t):
 
 
 t_CLASS = 'class'
+t_PRINT = 'print'
 t_COMMA = ','
 t_METHOD = 'method'
 t_COLON = ':'
@@ -178,7 +193,8 @@ t_WCOLON = '::'
 t_ADD = r'\+'
 t_MODADD = r'\+='
 t_MODSUB = r'-='
-t_MODXOR = r'^='
+t_MODXOR = r'\^='
+t_SWAP = r'<=>'
 t_EQ = r'='
 t_NEQ = r'!='
 t_SUB = r'-'

@@ -1,3 +1,4 @@
+import copy
 store = {}
 
 
@@ -12,15 +13,16 @@ def makeStore(classMap, className):
             # TODO: ex) AクラスのfieldをAクラス内で宣言したら、エラーを出す。
             #          現在は無限再帰のpython側のエラーとなっている。
             #st[f] = makeStore(classMap, classMap[className]['fields'][f])
-            pass
+            st[f] = {}
     return st
 
 
-def evalProg(classMap):
+def evalProg(classMap, arg):
 
     global invert
     invert = False
-    print(classMap)
+    if arg == "--map":
+        print(classMap)
     store = {'program': makeStore(classMap, 'Program')}
 
     mainMethodStatements = classMap['Program']['methods']['main']["statements"]
@@ -30,12 +32,26 @@ def evalProg(classMap):
 
     print("\nSTORE:", store)
 
+def checkNil(object):
+    if isinstance(object, int):
+        return object
+    if len(object) == 0:
+        return {} 
+    elif len(object) == 1:
+        if 'type' in object:
+            return {}
+    else:
+        return object
+    
 
 def evalExp(thisStore, exp):
     if len(exp) == 1:  # [<int>] or [<varName>]
         if exp[0].isdecimal():
             return int(exp[0])
         else:
+            # keyがtypeだけのものも{}でreturnする必要がある。
+            if exp[0] == 'nil':
+                return {}
             return thisStore[exp[0]]
     else:
         if (exp[1] == '+'):
@@ -43,21 +59,36 @@ def evalExp(thisStore, exp):
         elif (exp[1] == '-'):
             return evalExp(thisStore, exp[0]) - evalExp(thisStore, exp[2])
         elif (exp[1] == '='):
-            return evalExp(thisStore, exp[0]) == evalExp(thisStore, exp[2])
+            
+            e1 = checkNil(evalExp(thisStore, exp[0]))
+            e2 = checkNil(evalExp(thisStore, exp[2]))
+            return e1  == e2
+
         elif (exp[1] == '!='):
-            return evalExp(thisStore, exp[0]) != evalExp(thisStore, exp[2])
+            e1 = checkNil(evalExp(thisStore, exp[0]))
+            e2 = checkNil(evalExp(thisStore, exp[2]))
+            return e1 != e2
         elif (exp[1] == '&'):
             return evalExp(thisStore, exp[0]) and evalExp(thisStore, exp[2])
 
 
 def evalStatement(classMap, statement, thisStore, thisType):
-    
+
     global invert
+    if statement is None :
+        return
     if (statement[0] == '+='):
         if invert:
             thisStore[statement[1]] -= evalExp(thisStore, statement[2])
         else:
             thisStore[statement[1]] += evalExp(thisStore, statement[2])
+
+    elif (statement[0] == 'print'):
+        
+        print(evalExp(thisStore, statement[1]))
+
+    elif (statement[0] == 'skip'):
+        pass
     elif (statement[0] == '-='):
         if invert:
             thisStore[statement[1]] += evalExp(thisStore, statement[2])
@@ -65,52 +96,94 @@ def evalStatement(classMap, statement, thisStore, thisType):
             thisStore[statement[1]] -= evalExp(thisStore, statement[2])
     elif (statement[0] == '^='):
         thisStore[statement[1]] ^= evalExp(thisStore, statement[2])
+    elif (statement[0] == '<=>'):
+        tmp = thisStore[statement[1]]
+        thisStore[statement[1]] = thisStore[statement[2]]
+        thisStore[statement[2]] = tmp
+
     elif (statement[0] == 'new'):
-        thisStore[statement[2]] = makeStore(classMap, statement[1])
+        thisStore[statement[2]].update( makeStore(classMap, statement[1]) )
 
     elif (statement[0] == 'call' or statement[0] == 'uncall'):
         # ['call', 'tc', 'test', [args]]
+        # ['call', 'test', [args]]
 
-        try: # when caller is field
-            callerType = classMap[thisType]['fields'][statement[1]]
-        except:# when caller is arg
-            callerType = thisStore[statement[1]]['type']
+        if len(statement) == 4:
+            try:  # when caller is field
+                callerType = classMap[thisType]['fields'][statement[1]]
+            except:  # when caller is arg or local
+                callerType = thisStore[statement[1]]['type']
 
-        callMethod = classMap[callerType]['methods'][statement[2]]
-        stmts = callMethod["statements"]
-        args = callMethod["args"]
+            callMethodInfo = classMap[callerType]['methods'][statement[2]]
+            callMethodName = statement[2]
+            storeToPass = copy.copy(thisStore[statement[1]])
+            argsPassed= statement[3]
+            returnStore = thisStore[statement[1]]
+        else:
+            callerType = thisType
+            callMethodName = statement[1]
+            callMethodInfo = classMap[callerType]['methods'][callMethodName]
+            storeToPass = copy.copy(thisStore) #関数を実行するために必要なstore
+            returnStore = thisStore
+            argsPassed= statement[2]
 
-        for i, a in enumerate(args):
+
+
+        stmts = callMethodInfo["statements"]
+        argsInfo = callMethodInfo["args"]
+
+
+        for i, a in enumerate(argsInfo):
             # ex) args =  [{'name': 'a', 'type': 'int'}, {'name': 'b', 'type': 'int'}]
+            try:
+                storeToPass.pop(argsPassed[i])
+            except:
+                pass
             if a['type'] == 'int':
-                thisStore[statement[1]][a['name']] = thisStore[statement[3][i]]
+                storeToPass[a['name']] = thisStore[argsPassed[i]]
             else:
-                thisStore[statement[1]][a['name']] = thisStore[statement[3][i]]
-                thisStore[statement[1]][a['name']]['type'] = a['type']
+                storeToPass[a['name']] = thisStore[argsPassed[i]]
+                storeToPass[a['name']]['type'] = a['type']
 
 
-
-        if statement[0] == 'call' :
+        if statement[0] == 'call':
             for stmt in stmts:
-                evalStatement(classMap, stmt, thisStore[statement[1]], callerType)
-        if statement[0] == 'uncall' :
+                evalStatement(classMap, stmt,
+                              storeToPass, callerType)
+
+        if statement[0] == 'uncall':
             invert = True
             for stmt in reversed(stmts):
-                evalStatement(classMap, stmt, thisStore[statement[1]], callerType)
+                evalStatement(classMap, stmt,
+                              storeToPass, callerType)
             invert = False
 
-        for i, a in enumerate(args):
+        
+
+
+# おかしい
+        for i, a in enumerate(argsInfo):
             # ex) args =  [{'name': 'a', 'type': 'int'}, {'name': 'b', 'type': 'int'}]
-            if a['type'] == 'int':
-                thisStore[statement[3][i]] = thisStore[statement[1]][a['name']]
-                thisStore[statement[1]].pop(a['name'])
-            else:
-                thisStore[statement[1]][a['name']].pop('type')
-                thisStore[statement[3][i]] = thisStore[statement[1]][a['name']]
-                thisStore[statement[1]].pop(a['name'])
+            # これでargumentにわたした変数を更新
+            thisStore[argsPassed[i]] = storeToPass[a['name']]
+            # local callの場合、argument以外にmember変数も更新される可能性がある。
+            # よってargument以外も更新。
+            # returnStoreにあるkeyのみに更新をかける。
+            for key in storeToPass.keys():
+                try:
+                    returnStore[key]
+                except:
+                    continue
+                returnStore[key] = storeToPass[key]
+
+
+
+
+
+
 
     elif (statement[0] == 'if'):  # statement[1:4] = [e1, s1, s2, e2]
-        if invert :
+        if invert:
             e1 = statement[4]
             e2 = statement[1]
         else:
@@ -118,13 +191,13 @@ def evalStatement(classMap, statement, thisStore, thisType):
             e2 = statement[4]
 
         e1 = evalExp(thisStore, e1)
-        if e1 :
-            if invert :
+        if e1:
+            if invert:
                 statements = reversed(statement[2])
             else:
                 statements = statement[2]
         else:
-            if invert :
+            if invert:
                 statements = reversed(statement[3])
             else:
                 statements = statement[3]
@@ -133,7 +206,7 @@ def evalStatement(classMap, statement, thisStore, thisType):
             evalStatement(classMap, s, thisStore, thisType)
 
     elif (statement[0] == 'from'):  # statement[1:4] = [e1, s1, s2, e2]
-        if invert :
+        if invert:
             e1 = statement[4]
             e2 = statement[1]
         else:
@@ -147,7 +220,6 @@ def evalStatement(classMap, statement, thisStore, thisType):
 
         # initially, e1 is true.
         while result_e1:
-
 
             for s in statement[2]:
                 evalStatement(classMap, s, thisStore, thisType)
@@ -165,8 +237,25 @@ def evalStatement(classMap, statement, thisStore, thisType):
                 if invert:
                     raise Exception("Loop initial Condition is False")
                 else:
-                    raise Exception("INVERTED : Loop initial Condition is False")
+                    raise Exception(
+                        "INVERTED : Loop initial Condition is False")
 
+    # LOCAL:0 type:1 id:2 EQ exp:3  statements:4 DELOCAL type:5 id:6 EQ exp:7
+    elif (statement[0] == 'local'):
 
+        thisStore[statement[2][0]] = evalExp(thisStore, statement[3])
+        if statement[1] != 'int':
+            thisStore[statement[2][0]]['type'] = statement[1]
 
+        for s in statement[4]:
+            evalStatement(classMap, s, thisStore, thisType)
 
+        try:
+            thisStore[statement[2][0]].pop('type')
+        except:
+            pass
+
+        if thisStore[statement[2][0]] == evalExp(thisStore, statement[7]):
+            thisStore.pop(statement[6][0])
+        else:
+            raise Exception("delocal Error")

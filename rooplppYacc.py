@@ -1,6 +1,7 @@
 # -*- encoding: utf-8 -*-
 
 import ply.yacc as yacc
+import sys
 
 from rooplppLexer import tokens
 from rooplppEval import evalProg
@@ -88,9 +89,9 @@ def p_methods(p):
 
 def p_method(p):
     '''
-    method : METHOD ID  LPAREN varDecCommas RPAREN COLON statements
+    method : METHOD ID  LPAREN varDecCommas RPAREN  statements
     '''
-    p[0] = {"methodName": p[2], "args": p[4], "statements": p[7] }
+    p[0] = {"methodName": p[2], "args": p[4], "statements": p[6] }
 
 def p_varDecCommas(p):
     '''
@@ -176,21 +177,36 @@ def p_statement(p):
     '''
     statement : ID modOp exp
     | NEW type ID
+    | SKIP
+    | PRINT exp 
+    | id SWAP id
     | CALL ID WCOLON ID LPAREN anyIds RPAREN
     | UNCALL ID WCOLON ID LPAREN anyIds RPAREN
+    | CALL   ID LPAREN anyIds RPAREN
+    | UNCALL ID LPAREN anyIds RPAREN
     | IF exp THEN statements ELSE statements FI exp
     | FROM exp DO statements LOOP statements UNTIL exp
+    | LOCAL type id EQ exp  statements DELOCAL type id EQ exp
     '''
-    if len(p) == 4:
+    if len(p) == 2:
+        p[0] = [p[1]]
+    elif len(p) == 3:
+        p[0] = [p[1], p[2]]
+    elif len(p) == 4:
         if p[1] == 'new':
             p[0] = [p[1], p[2], p[3]]
+        elif p[2] == '<=>':
+            p[0] = [p[2], p[1][0], p[3][0]]
         else:
             p[0] = [p[2], p[1], p[3]]
+    elif len(p) == 6: # call
+        p[0] = [p[1], p[2], p[4]]
     elif len(p) == 8: # call
         p[0] = [p[1], p[2], p[4], p[6]]
     elif len(p) == 9: # if or from do until
         p[0] = [p[1], p[2], p[4], p[6], p[8]]
-
+    elif len(p) == 12: # local-delocal
+        p[0] = [p[1], p[2], p[3], p[5], p[6], p[8], p[9], p[11]]
 
 def p_modOp(p):
     '''
@@ -220,10 +236,16 @@ precedence = (
     ('left', 'MUL', 'DIV', 'MOD'),
 )
 
+def p_nil(p):
+    '''
+    nil : NIL
+    '''
+    p[0] = [p[1]]
 def p_exp(p):
     '''
     exp : number
     | id
+    | nil
     | exp MUL exp
     | exp DIV exp
     | exp ADD exp
@@ -258,10 +280,13 @@ def yacc_test():
     f = open('test.rplpp', 'r')
     data = f.read()
     f.close()
+    args = sys.argv
 
     parser = yacc.yacc()
     result = parser.parse(data)
-    evalProg(classMap)
+    if len(args) == 1:
+        args.append("")
+    evalProg(classMap, args[1])
 
     print('result: ', result)
 
