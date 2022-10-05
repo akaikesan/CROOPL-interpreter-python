@@ -8,10 +8,6 @@ class Cell
 
     method append(Cell cell)
         if next = nil & cell != nil then
-            print cell != nil
-            print next 
-            print cell
-       
       	    next <=> cell
         else skip
         fi next != nil & cell = nil
@@ -38,6 +34,7 @@ class LinkedList
         else skip
     	fi head != nil
 
+
     	listLength += 1
 
     method prependCell(Cell cell)
@@ -63,7 +60,7 @@ class Program
     int sumResult
     int listLength
 
-    method main()
+    method makeList()
         new LinkedList linkedList
         listLength +=  10
 
@@ -71,12 +68,19 @@ class Program
           from x = 0 do
             skip
           loop
+
+              print x
               local Cell cell = nil
               new Cell cell
               call cell::constructor(x)
+              print cell
               call linkedList::appendCell(cell)
               delocal Cell cell = nil
               x += 1
           until x = listLength
         delocal int x = listLength
+    
+    method main()
+        call makeList()
+        uncall makeList()
 
