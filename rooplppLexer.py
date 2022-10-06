@@ -81,6 +81,7 @@ tokens = (
 
 reserved = {
     'class': 'CLASS',
+    'copy': 'COPY',
     'print': 'PRINT',
     'skip': 'SKIP',
     'new': 'NEW',
@@ -185,6 +186,7 @@ def t_UNTIL(t):
 
 
 t_CLASS = 'class'
+t_COPY= 'copy'
 t_PRINT = 'print'
 t_COMMA = ','
 t_METHOD = 'method'
@@ -203,6 +205,8 @@ t_MUL = r'\*'
 t_DIV = r'/'
 t_LPAREN = r'\('
 t_RPAREN = r'\)'
+t_LBRA = r'\['
+t_RBRA = r'\]'
 t_NUMBER = r'(0 | [1-9][0-9]*)'
 t_LBRACE = '{'
 t_RBRACE = '}'

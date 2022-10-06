@@ -1,4 +1,4 @@
-# -*- encoding: utf-8 -*-
+
 
 import ply.yacc as yacc
 import sys
@@ -60,6 +60,8 @@ def p_type(p):
     '''
     type : INT
     | className
+    | INT LBRA RBRA
+    | className LBRA RBRA
     '''
     p[0] = p[1]
 
@@ -178,8 +180,9 @@ def p_statement(p):
     statement : ID modOp exp
     | NEW type ID
     | SKIP
-    | PRINT exp 
+    | PRINT exp
     | id SWAP id
+    | COPY type id id
     | CALL ID WCOLON ID LPAREN anyIds RPAREN
     | UNCALL ID WCOLON ID LPAREN anyIds RPAREN
     | CALL   ID LPAREN anyIds RPAREN
@@ -199,9 +202,11 @@ def p_statement(p):
             p[0] = [p[2], p[1][0], p[3][0]]
         else:
             p[0] = [p[2], p[1], p[3]]
-    elif len(p) == 6: # call
+    elif len(p) == 5: # local call
+        p[0] = [p[1], p[2], p[3][0], p[4][0]]
+    elif len(p) == 6: # local call
         p[0] = [p[1], p[2], p[4]]
-    elif len(p) == 8: # call
+    elif len(p) == 8: # call object method
         p[0] = [p[1], p[2], p[4], p[6]]
     elif len(p) == 9: # if or from do until
         p[0] = [p[1], p[2], p[4], p[6], p[8]]
@@ -277,15 +282,15 @@ def p_exp(p):
 
 
 def yacc_test():
-    f = open('test.rplpp', 'r')
+    args = sys.argv
+    if len(args) == 1:
+        raise Exception("filename not provided.")
+    f = open(args[-1], 'r')
     data = f.read()
     f.close()
-    args = sys.argv
 
     parser = yacc.yacc()
     result = parser.parse(data)
-    if len(args) == 1:
-        args.append("")
     evalProg(classMap, args[1])
 
     print('result: ', result)

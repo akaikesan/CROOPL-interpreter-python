@@ -17,11 +17,11 @@ def makeStore(classMap, className):
     return st
 
 
-def evalProg(classMap, arg):
+def evalProg(classMap, argOption):
 
     global invert
     invert = False
-    if arg == "--map":
+    if argOption == "--map":
         print(classMap)
     store = {'program': makeStore(classMap, 'Program')}
 
@@ -107,6 +107,12 @@ def evalStatement(classMap, statement, thisStore, thisType):
             thisStore[statement[2]] = {}
         else:
             thisStore[statement[2]].update( makeStore(classMap, statement[1]) )
+    elif (statement[0] == 'copy'):
+        if invert:
+            thisStore[statement[2]] = thisStore[statement[3]]
+        else:
+            # TODO: typecheck
+            thisStore[statement[3]] = thisStore[statement[2]]
 
     elif (statement[0] == 'call' or statement[0] == 'uncall'):
         # ['call', 'tc', 'test', [args]]
