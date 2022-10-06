@@ -109,7 +109,7 @@ def evalStatement(classMap, statement, thisStore, thisType):
             thisStore[statement[2]].update( makeStore(classMap, statement[1]) )
     elif (statement[0] == 'copy'):
         if invert:
-            thisStore[statement[2]] = thisStore[statement[3]]
+            thisStore[statement[3]] = {}
         else:
             # TODO: typecheck
             thisStore[statement[3]] = thisStore[statement[2]]

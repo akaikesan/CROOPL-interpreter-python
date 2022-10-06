@@ -69,7 +69,7 @@ class Program
     DoublyLinkedList list
     int listLength
 
-    method main()
+    method makeList()
         new DoublyLinkedList list
         listLength += 10
 
@@ -90,3 +90,7 @@ class Program
       	    x += 1
         until x = listLength
     	delocal int x = listLength
+
+    method main()
+        call makeList()
+        uncall makeList()
