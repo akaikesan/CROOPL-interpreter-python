@@ -63,7 +63,17 @@ def p_type(p):
     | INT LBRA RBRA
     | className LBRA RBRA
     '''
-    p[0] = p[1]
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 4:
+        p[0] = [p[1]]
+
+def p_arrayType(p):
+    '''
+    arrayType : type LBRA exp RBRA
+    | INT LBRA exp RBRA
+    '''
+    p[0] = [[p[1], p[3]]]
 
 
 def p_varName(p):
@@ -100,7 +110,6 @@ def p_varDecCommas(p):
     varDecCommas : varDecCommas1
     |
     '''
-
     if len(p) == 2:
         p[0] = p[1]
     else:
@@ -150,8 +159,12 @@ def p_anyIds(p):
 def p_id(p):
     '''
     id : ID
+    | ID LBRA exp RBRA
     '''
-    p[0] = [p[1]]
+    if len(p) == 2:
+        p[0] = [p[1]]
+    elif len(p) == 5:
+        p[0] = [[p[1], p[3]]]
 
 
 def p_arg(p):
@@ -177,8 +190,10 @@ def p_anyIds1(p):
 
 def p_statement(p):
     '''
-    statement : ID modOp exp
-    | NEW type ID
+    statement : id modOp exp
+    | NEW type id
+    | DELETE type id
+    | NEW arrayType id
     | SKIP
     | PRINT exp
     | id SWAP id
@@ -196,14 +211,12 @@ def p_statement(p):
     elif len(p) == 3:
         p[0] = [p[1], p[2]]
     elif len(p) == 4:
-        if p[1] == 'new':
+        if p[1] == 'new' or p[1] == 'delete':
             p[0] = [p[1], p[2], p[3]]
-        elif p[2] == '<=>':
-            p[0] = [p[2], p[1][0], p[3][0]]
         else:
-            p[0] = [p[2], p[1], p[3]]
-    elif len(p) == 5: # local call
-        p[0] = [p[1], p[2], p[3][0], p[4][0]]
+            p[0] = ['assignment', p[2], p[1], p[3]]
+    elif len(p) == 5: # copy
+        p[0] = [p[1], p[2], p[3], p[4]]
     elif len(p) == 6: # local call
         p[0] = [p[1], p[2], p[4]]
     elif len(p) == 8: # call object method
@@ -246,6 +259,7 @@ def p_nil(p):
     nil : NIL
     '''
     p[0] = [p[1]]
+
 def p_exp(p):
     '''
     exp : number

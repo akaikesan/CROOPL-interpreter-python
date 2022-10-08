@@ -93,4 +93,3 @@ class Program
 
     method main()
         call makeList()
-        uncall makeList()

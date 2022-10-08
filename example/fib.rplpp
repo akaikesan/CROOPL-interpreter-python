@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // Excerpted and revised from [1, p.11]
-//
+// 1 1 2 3 5 8
 // [1] Cservenka, M.H.: Design and Implementation of Dynamic Memory Management
 //     in a Reversible Object-Oriented Programming Language, Master's thesis,
 //     Department of Computer Science, University of Copenhagen (2018).

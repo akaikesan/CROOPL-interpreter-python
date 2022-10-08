@@ -85,6 +85,7 @@ reserved = {
     'print': 'PRINT',
     'skip': 'SKIP',
     'new': 'NEW',
+    'delete': 'DELETE',
     'from': 'FROM',
     'if': 'IF',
     'do': 'DO',
@@ -186,6 +187,7 @@ def t_UNTIL(t):
 
 
 t_CLASS = 'class'
+t_DELETE = 'delete'
 t_COPY= 'copy'
 t_PRINT = 'print'
 t_COMMA = ','
