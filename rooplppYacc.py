@@ -1,5 +1,3 @@
-
-
 import ply.yacc as yacc
 import sys
 
@@ -158,19 +156,19 @@ def p_anyIds(p):
 
 def p_y(p):
     '''
-    y : ID
+    y : ID LBRA exp RBRA
     | id
     '''
-    if type(p[1]) == str:
-        p[0] = [p[1]]
-    else:
+    if len(p) == 2:
         p[0] = p[1]
+    else:
+        p[0] = [[p[1], p[3]]]
 
 def p_id(p):
     '''
-    id : ID LBRA exp RBRA
+    id : ID
     '''
-    p[0] = [[p[1], p[3]]]
+    p[0] = [p[1]]
 
 
 def p_arg(p):
@@ -197,8 +195,8 @@ def p_anyIds1(p):
 def p_statement(p):
     '''
     statement : y modOp exp
-    | NEW arrayType y
-    | DELETE arrayType y
+    | NEW arrayType id
+    | DELETE arrayType id
     | NEW className y
     | DELETE className y
     | SKIP
