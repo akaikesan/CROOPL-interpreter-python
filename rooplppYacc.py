@@ -156,20 +156,26 @@ def p_anyIds(p):
         p[0] = p[1]
 
 
+def p_y(p):
+    '''
+    y : ID
+    | id
+    '''
+    if type(p[1]) == str:
+        p[0] = [p[1]]
+    else:
+        p[0] = p[1]
+
 def p_id(p):
     '''
-    id : ID
-    | ID LBRA exp RBRA
+    id : ID LBRA exp RBRA
     '''
-    if len(p) == 2:
-        p[0] = [p[1]]
-    elif len(p) == 5:
-        p[0] = [[p[1], p[3]]]
+    p[0] = [[p[1], p[3]]]
 
 
 def p_arg(p):
     '''
-    arg : id
+    arg : y
     | exp
     '''
     p[0] = p[1]
@@ -190,21 +196,22 @@ def p_anyIds1(p):
 
 def p_statement(p):
     '''
-    statement : id modOp exp
-    | NEW type id
-    | DELETE type id
-    | NEW arrayType id
+    statement : y modOp exp
+    | NEW arrayType y
+    | DELETE arrayType y
+    | NEW className y
+    | DELETE className y
     | SKIP
     | PRINT exp
-    | id SWAP id
-    | COPY type id id
+    | y SWAP y
+    | COPY type y y
     | CALL ID WCOLON ID LPAREN anyIds RPAREN
     | UNCALL ID WCOLON ID LPAREN anyIds RPAREN
     | CALL   ID LPAREN anyIds RPAREN
     | UNCALL ID LPAREN anyIds RPAREN
     | IF exp THEN statements ELSE statements FI exp
     | FROM exp DO statements LOOP statements UNTIL exp
-    | LOCAL type id EQ exp  statements DELOCAL type id EQ exp
+    | LOCAL type y EQ exp  statements DELOCAL type y EQ exp
     '''
     if len(p) == 2:
         p[0] = [p[1]]
@@ -263,7 +270,7 @@ def p_nil(p):
 def p_exp(p):
     '''
     exp : number
-    | id
+    | y
     | nil
     | exp MUL exp
     | exp DIV exp
