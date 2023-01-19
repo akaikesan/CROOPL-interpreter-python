@@ -27,8 +27,6 @@ def makeStore(classMap, className):
 
 def evalProg(classMap, argOption):
 
-    global invert
-    invert = False
     if argOption == "--map":
         print(classMap)
     store = {'program': makeStore(classMap, 'Program')}
@@ -37,7 +35,9 @@ def evalProg(classMap, argOption):
 
     startStatement = ['call', 'main', []]
 
-    evalStatement(classMap, startStatement, store['program'], 'Program')
+    invert = False
+
+    evalStatement(classMap, startStatement, store['program'], 'Program', invert)
 
     print("\nSTORE:", store)
 
@@ -85,9 +85,8 @@ def evalExp(thisStore, exp):
             return evalExp(thisStore, exp[0]) and evalExp(thisStore, exp[2])
 
 
-def evalStatement(classMap, statement, thisStore, thisType):
+def evalStatement(classMap, statement, thisStore, thisType, invert):
 
-    global invert
     if statement is None:
         return
     if (statement[0] == 'assignment'): # p[0] = ['assignment', p[2], p[1], p[3]]
@@ -231,12 +230,12 @@ def evalStatement(classMap, statement, thisStore, thisType):
             if invert:
                 stmts = reversed(stmts)
             for stmt in stmts:
-                evalStatement(classMap, stmt, storeToPass, callerType)
+                evalStatement(classMap, stmt, storeToPass, callerType, invert)
 
         elif statement[0] == 'uncall':
             invert = not invert
             for stmt in reversed(stmts):
-                evalStatement(classMap, stmt, storeToPass, callerType)
+                evalStatement(classMap, stmt, storeToPass, callerType, invert)
             invert = not invert
 
         for i, a in enumerate(argsInfo):
@@ -275,7 +274,7 @@ def evalStatement(classMap, statement, thisStore, thisType):
                 statements = statement[3]
 
         for s in statements:
-            evalStatement(classMap, s, thisStore, thisType)
+            evalStatement(classMap, s, thisStore, thisType, invert)
 
     elif (statement[0] == 'from'):  # statement[1:4] = [e1, s1, s2, e2]
         if invert:
@@ -298,17 +297,17 @@ def evalStatement(classMap, statement, thisStore, thisType):
         while result_e1:  # e1  e2
 
             for s in s1:  # s1  s1
-                evalStatement(classMap, s, thisStore, thisType)
+                evalStatement(classMap, s, thisStore, thisType, invert)
 
             if evalExp(thisStore, e2):  # e2 e1
                 break
             else:
                 if invert:
                     for s in reversed(s2):
-                        evalStatement(classMap, s, thisStore, thisType)
+                        evalStatement(classMap, s, thisStore, thisType, invert)
                 else:
                     for s in s2:
-                        evalStatement(classMap, s, thisStore, thisType)
+                        evalStatement(classMap, s, thisStore, thisType, invert)
 
             # after 1st loop, e1 is false.
             result_e1 = not evalExp(thisStore, e1)
@@ -341,7 +340,7 @@ def evalStatement(classMap, statement, thisStore, thisType):
             thisStore[id1]['type'] = statement[1]
 
         for s in stmts:
-            evalStatement(classMap, s, thisStore, thisType)
+            evalStatement(classMap, s, thisStore, thisType, invert)
 
         try:
             thisStore[id1].pop('type')

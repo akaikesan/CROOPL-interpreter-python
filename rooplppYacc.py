@@ -1,8 +1,11 @@
 import ply.yacc as yacc
 import sys
+import multiprocessing as mp
+import time
 
 from rooplppLexer import tokens
-from rooplppEval import evalProg
+from rooplppEval import  makeStore, evalProg
+from interpreter import interpreter
 
 classMap = {}
 
@@ -310,9 +313,22 @@ def yacc_test():
 
     parser = yacc.yacc()
     result = parser.parse(data)
-    evalProg(classMap, args[1])
 
-    print('result: ', result)
+    #------- スレッド生成時の下準備
+    print("making thread")
+    m = mp.Manager()
+    q = m.Queue()
+    p = mp.Process(target = interpreter, args=('program',classMap, "Program", q, {'program':makeStore(classMap, "Program")}))
+    #------- スレッド生成
+    p.start()
+    time.sleep(1)
+
+    print("put in Queue")
+    q.put(["main", []])
+
+    inv = True
+
+    #evalProg(classMap, args[1], inv) # 逐次実行の開始
 
 
 if __name__ == '__main__':
