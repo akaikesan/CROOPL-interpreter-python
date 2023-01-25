@@ -321,6 +321,7 @@ def yacc_test():
     p = mp.Process(target = interpreter, args=('program',classMap, "Program", q, {'program':makeStore(classMap, "Program")}))
     #------- スレッド生成
     p.start()
+
     time.sleep(1)
 
     print("put in Queue")
