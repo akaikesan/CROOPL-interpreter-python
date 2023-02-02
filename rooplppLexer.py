@@ -77,6 +77,7 @@ tokens = (
     'DIVIDE',
     'LBRACE',
     'RBRACE',
+    'SEPARATE',
 )
 
 reserved = {
@@ -101,6 +102,7 @@ reserved = {
     'uncall': 'UNCALL',
     'local': 'LOCAL',
     'delocal': 'DELOCAL',
+    'separate': 'SEPARATE',
     'nil': 'NIL',
 }
 

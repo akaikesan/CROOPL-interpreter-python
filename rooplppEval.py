@@ -1,5 +1,7 @@
 import copy
 store = {}
+import multiprocessing as mp
+import time
 
 
 def makeStore(classMap, className):
@@ -172,8 +174,23 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
                 thisStore[statement[2][0]].update(
                     {'value': makeStore(classMap, statement[1])})
             else:
-                thisStore[statement[2][0]].update(
-                    makeStore(classMap, statement[1]))
+                if len(statement) == 4: # separate
+
+                    m = mp.Manager()
+                    q = m.Queue()
+                    ms = makeStore(classMap, statement[1])
+                    ms['#q'] = q
+                    thisStore[statement[2][0]].update(ms)
+
+                    p = mp.Process(target = interpreter, args=(statement[2][0],classMap, statement[1], q, thisStore))
+
+                    p.start()
+
+                    time.sleep(1)
+                else:
+                    thisStore[statement[2][0]].update(
+                        makeStore(classMap, statement[1]))
+
 
     elif (statement[0] == 'delete'):
         if invert:
@@ -193,6 +210,12 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
         # ['call', 'test', [args]]
 
         if len(statement) == 4:  # call method of object
+            if "#q" in thisStore.keys():
+                q = thisStore['#q']
+                time.sleep(1)
+                q.put([statement[2], statement[3]])
+                return
+
             try:  # when caller is field
                 callerType = classMap[thisType]['fields'][statement[1]]
             except:  # when caller is arg or local
@@ -243,7 +266,7 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
             # これでargumentにわたした変数を更新
             thisStore[argsPassed[i]] = storeToPass[a['name']]
 
-        # local callの場合、argument以外にmember変数も更新される可能性がある。
+        # local callの場合、argument以外にmember変数も更新される可能性。
         # よってargument以外も更新。
         # returnStoreにあるkeyのみに更新をかける。
         for key in storeToPass.keys():
@@ -351,3 +374,20 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
             thisStore.pop(statement[6][0])
         else:
             raise Exception("delocal Error")
+
+def interpreter(objName, classMap, className, q, store):
+    invert = False
+    print("interpreter of " + objName + " start")
+    while(True):
+        if q.qsize() == 0:
+            continue
+        else:
+            request = q.get()
+            methodName = request[0]
+            args = request[1]
+            startStatement = ['call', objName, methodName, args]
+            evalStatement(classMap,
+                          startStatement,
+                          store[objName],
+                          className,
+                          invert)

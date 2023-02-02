@@ -201,6 +201,7 @@ def p_statement(p):
     | NEW arrayType id
     | DELETE arrayType id
     | NEW className y
+    | NEW SEPARATE className y
     | DELETE className y
     | SKIP
     | PRINT exp
@@ -224,7 +225,10 @@ def p_statement(p):
         else:
             p[0] = ['assignment', p[2], p[1], p[3]]
     elif len(p) == 5: # copy
-        p[0] = [p[1], p[2], p[3], p[4]]
+        if p[1] == 'new' or p[1] == 'delete':
+            p[0] = [p[1], p[3], p[4], p[2]]
+        else:
+            p[0] = [p[1], p[2], p[3], p[4]]
     elif len(p) == 6: # local call
         p[0] = [p[1], p[2], p[4]]
     elif len(p) == 8: # call object method
@@ -318,8 +322,11 @@ def yacc_test():
     print("making thread")
     m = mp.Manager()
     q = m.Queue()
-    p = mp.Process(target = interpreter, args=('program',classMap, "Program", q, {'program':makeStore(classMap, "Program")}))
+    ms = makeStore(classMap, "Program")
+    ms['#q'] = q
+    p = mp.Process(target = interpreter, args=('program',classMap, "Program", q, {'program':ms}))
     #------- スレッド生成
+    print({'program':ms})
     p.start()
 
     time.sleep(1)
