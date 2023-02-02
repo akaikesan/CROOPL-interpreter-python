@@ -160,7 +160,6 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
 
 
     elif (statement[0] == 'print'):
-
         print(evalExp(thisStore, statement[1]))
 
     elif (statement[0] == 'skip'):
@@ -173,8 +172,7 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
                 thisStore[statement[2][0]].update(
                     {'value': makeStore(classMap, statement[1])})
             else:
-                if len(statement) == 4: # separate
-
+                if len(statement) == 4: # new separate type varName
                     m = mp.Manager()
                     q = m.Queue()
                     ms = makeStore(classMap, statement[1])
@@ -214,7 +212,7 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
                 # push to Queue, return.
                 q = thisStore[statement[1]]['#q']
                 time.sleep(1)
-                q.put([statement[2], statement[3]])
+                q.put([statement[2], statement[3], statement[0]])
                 return
 
             try:  # when caller is field
@@ -400,12 +398,14 @@ def interpreter(objName, classMap, className, q, store):
             request = q.get()
             methodName = request[0]
             args = request[1]
-            startStatement = ['call', objName, methodName, args, 'separate']
+            callORuncall = request[2]
+            startStatement = [callORuncall, objName, methodName, args, 'separate']
             evalStatement(classMap,
                           startStatement,
                           store,
                           className,
                           invert)
+            print(store)
 
 """
 発表：BNFを載せる。
