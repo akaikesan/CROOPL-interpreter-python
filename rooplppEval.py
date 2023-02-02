@@ -35,11 +35,8 @@ def evalProg(classMap, argOption):
     mainMethodStatements = classMap['Program']['methods']['main']["statements"]
 
     startStatement = ['call', 'main', []]
-
     invert = False
-
     evalStatement(classMap, startStatement, store['program'], 'Program', invert)
-
     print("\nSTORE:", store)
 
 
@@ -158,7 +155,6 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
                 else:
                     thisStore[statement[3][0]] = tmp
 
-
     elif (statement[0] == 'print'):
         print(evalExp(thisStore, statement[1]))
 
@@ -183,7 +179,7 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
 
                     p.start()
 
-                    time.sleep(1)
+                    time.sleep(0.1)
                 else:
                     thisStore[statement[2][0]].update(
                         makeStore(classMap, statement[1]))
@@ -211,7 +207,7 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
             if "#q" in thisStore.keys(): ### before eval method of separated object
                 # push to Queue, return.
                 q = thisStore[statement[1]]['#q']
-                time.sleep(1)
+                time.sleep(0.1)
                 q.put([statement[2], statement[3], statement[0]])
                 return
 
@@ -405,7 +401,6 @@ def interpreter(objName, classMap, className, q, store):
                           store,
                           className,
                           invert)
-            print(store)
 
 """
 発表：BNFを載せる。
