@@ -5,7 +5,6 @@ import time
 
 
 def makeStore(classMap, className):
-
     st = {}
     if isinstance(className, list):  # Array
         if className[0][0] == 'int':
@@ -211,8 +210,9 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
 
         if len(statement) == 4:  # call method of object
             if "#q" in thisStore.keys():
-                q = thisStore['#q']
+                q = thisStore[statement[1]]['#q']
                 time.sleep(1)
+                print(statement)
                 q.put([statement[2], statement[3]])
                 return
 
@@ -239,6 +239,7 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
 
         for i, a in enumerate(argsInfo):
             # ex) args =  [{'name': 'a', 'type': 'int'}, {'name': 'b', 'type': 'int'}]
+            print(thisStore)
             try:
                 storeToPass.pop(argsPassed[i])
             except:
@@ -385,9 +386,25 @@ def interpreter(objName, classMap, className, q, store):
             request = q.get()
             methodName = request[0]
             args = request[1]
-            startStatement = ['call', objName, methodName, args]
+            startStatement = ['call',objName ,methodName, args]
             evalStatement(classMap,
                           startStatement,
-                          store[objName],
+                          store,
                           className,
                           invert)
+
+"""
+発表：BNFを載せる。
+- python
+- data raceが起きそうな場所がある
+目標：datarace が起きないようにする。
+ポイント：情報が失われないから、どの時点で止めても良い。今やっている情報を全て持っている。
+上書きすると、今までの情報が全て失われる。
+履歴が残っているのと同じなので、任意の時点で何をやっているか全部わかる。だから効率は悪い。
+平行だと、やり直そうとするとやり直せないけど、可逆だと、やり直せる。
+
+構成：
+枕詞
+BNF
+説明
+"""
