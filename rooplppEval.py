@@ -206,13 +206,14 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
 
     elif (statement[0] == 'call' or statement[0] == 'uncall'):
         # ['call', 'tc', 'test', [args]]
+        # ['call', 'tc', 'test', [args], 'separate']
         # ['call', 'test', [args]]
 
         if len(statement) == 4:  # call method of object
-            if "#q" in thisStore.keys():
+            if "#q" in thisStore.keys(): ### before eval method of separated object
+                # push to Queue, return.
                 q = thisStore[statement[1]]['#q']
                 time.sleep(1)
-                print(statement)
                 q.put([statement[2], statement[3]])
                 return
 
@@ -226,7 +227,21 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
             storeToPass = copy.copy(thisStore[statement[1]])
             argsPassed = statement[3]
             returnStore = thisStore[statement[1]]
+
+        elif len(statement) == 5:  ### eval method of separated object
+            try:  # when caller is field
+                callerType = classMap[thisType]['fields'][statement[1]]
+            except:  # when caller is arg or local
+                callerType = thisStore[statement[1]]['type']
+
+            callMethodInfo = classMap[callerType]['methods'][statement[2]]
+            callMethodName = statement[2]
+            storeToPass = copy.copy(thisStore[statement[1]])
+            argsPassed = statement[3]
+            returnStore = thisStore[statement[1]]
+
         else:  # local call
+            # if this is separated, thisStore is not correct
             callerType = thisType
             callMethodName = statement[1]
             callMethodInfo = classMap[callerType]['methods'][callMethodName]
@@ -239,7 +254,6 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
 
         for i, a in enumerate(argsInfo):
             # ex) args =  [{'name': 'a', 'type': 'int'}, {'name': 'b', 'type': 'int'}]
-            print(thisStore)
             try:
                 storeToPass.pop(argsPassed[i])
             except:
@@ -386,7 +400,7 @@ def interpreter(objName, classMap, className, q, store):
             request = q.get()
             methodName = request[0]
             args = request[1]
-            startStatement = ['call',objName ,methodName, args]
+            startStatement = ['call', objName, methodName, args, 'separate']
             evalStatement(classMap,
                           startStatement,
                           store,
