@@ -218,7 +218,7 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
 
             callMethodInfo = classMap[callerType]['methods'][statement[2]]
             callMethodName = statement[2]
-            storeToPass = copy.copy(thisStore[statement[1]])
+            storeToPass = thisStore[statement[1]]
             argsPassed = statement[3]
             returnStore = thisStore[statement[1]]
 
@@ -230,7 +230,7 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
 
             callMethodInfo = classMap[callerType]['methods'][statement[2]]
             callMethodName = statement[2]
-            storeToPass = copy.copy(thisStore[statement[1]])
+            storeToPass = thisStore[statement[1]]
             argsPassed = statement[3]
             returnStore = thisStore[statement[1]]
 
@@ -239,7 +239,7 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
             callerType = thisType
             callMethodName = statement[1]
             callMethodInfo = classMap[callerType]['methods'][callMethodName]
-            storeToPass = copy.copy(thisStore)  # 関数を実行するために必要なstore
+            storeToPass = thisStore  # 関数を実行するために必要なstore
             returnStore = thisStore
             argsPassed = statement[2]
 
@@ -248,10 +248,6 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
 
         for i, a in enumerate(argsInfo):
             # ex) args =  [{'name': 'a', 'type': 'int'}, {'name': 'b', 'type': 'int'}]
-            try:
-                storeToPass.pop(argsPassed[i])
-            except:
-                pass
             if a['type'] == 'int':
                 storeToPass[a['name']] = thisStore[argsPassed[i]]
             else:
@@ -284,6 +280,7 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
             except:
                 continue
             returnStore[key] = storeToPass[key]
+
 
     elif (statement[0] == 'if'):  # statement[1:4] = [e1, s1, s2, e2]
         if invert:
@@ -416,4 +413,5 @@ def interpreter(objName, classMap, className, q, store):
 枕詞
 BNF
 説明
+
 """

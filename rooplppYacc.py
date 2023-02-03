@@ -326,12 +326,10 @@ def yacc_test():
     ms['#q'] = q
     p = mp.Process(target = interpreter, args=('program',classMap, "Program", q, {'program':ms}))
     #------- スレッド生成
-    print({'program':ms})
     p.start()
 
-    time.sleep(1)
+    time.sleep(0.1)
 
-    print("put in Queue")
     q.put(["main", []])
 
     inv = True
