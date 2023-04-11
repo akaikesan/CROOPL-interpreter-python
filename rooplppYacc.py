@@ -1,10 +1,9 @@
 import ply.yacc as yacc
 import sys
-import multiprocessing as mp
 import time
 
 from rooplppLexer import tokens
-from rooplppEval import  makeStore, evalProg
+from rooplppEval import  makeStore 
 from interpreter import interpreter
 
 classMap = {}
@@ -60,14 +59,26 @@ def p_varDeclaration(p):
 def p_type(p):
     '''
     type : INT
+    | INT detachableTag
     | className
+    | className detachableTag  
     | INT LBRA RBRA
     | className LBRA RBRA
     '''
     if len(p) == 2:
         p[0] = p[1]
+    elif len(p) == 3:
+        p[0] = [p[1],p[2]]
     elif len(p) == 4:
         p[0] = [p[1]]
+
+def p_detachableTag(p):
+    '''
+    detachableTag : DETACHABLE
+    | ATTACHED
+    '''
+    p[0] = p[1]
+
 
 def p_arrayType(p):
     '''
@@ -324,7 +335,10 @@ def yacc_test():
     q = m.Queue()
     ms = makeStore(classMap, "Program")
     ms['#q'] = q
-    p = mp.Process(target = interpreter, args=('program',classMap, "Program", q, {'program':ms}))
+    print(q.qsize())
+    initStore = m.dict()
+    initStore['program'] = ms
+    p = mp.Process(target = interpreter, args=('program',classMap, "Program", q, initStore))
     #------- スレッド生成
     p.start()
 
@@ -332,10 +346,8 @@ def yacc_test():
 
     q.put(["main", []])
 
-    inv = True
-
-    #evalProg(classMap, args[1], inv) # 逐次実行の開始
-
 
 if __name__ == '__main__':
+    import multiprocessing as mp
+    mp.set_start_method('spawn', True)
     yacc_test()

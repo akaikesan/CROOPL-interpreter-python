@@ -78,6 +78,8 @@ tokens = (
     'LBRACE',
     'RBRACE',
     'SEPARATE',
+    'ATTACHED',
+    'DETACHABLE',
 )
 
 reserved = {
@@ -104,6 +106,8 @@ reserved = {
     'delocal': 'DELOCAL',
     'separate': 'SEPARATE',
     'nil': 'NIL',
+    'attached': 'ATTACHED',
+    'detachable': 'DETACHABLE',
 }
 
 

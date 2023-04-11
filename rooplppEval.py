@@ -1,11 +1,11 @@
 import copy
-store = {}
 import multiprocessing as mp
 import time
 
 
 def makeStore(classMap, className):
-    st = {}
+    m = mp.Manager()
+    st = m.dict()
     if isinstance(className, list):  # Array
         if className[0][0] == 'int':
             st = [0] * int(className[0][1][0])
@@ -25,21 +25,6 @@ def makeStore(classMap, className):
 
     return st
 
-
-def evalProg(classMap, argOption):
-
-    if argOption == "--map":
-        print(classMap)
-    store = {'program': makeStore(classMap, 'Program')}
-
-    mainMethodStatements = classMap['Program']['methods']['main']["statements"]
-
-    startStatement = ['call', 'main', []]
-    invert = False
-    evalStatement(classMap, startStatement, store['program'], 'Program', invert)
-    print("\nSTORE:", store)
-
-
 def checkNil(object):
     if isinstance(object, int):
         return object
@@ -51,9 +36,8 @@ def checkNil(object):
     else:
         return object
 
-
 def evalExp(thisStore, exp):
-    if len(exp) == 1:  # [<int>] or [<varName>]
+    if len(exp) == 1:  # [<int>] or [<varName>thisS
         if isinstance(exp[0], list):
             return thisStore[exp[0][0]]['value'][int(exp[0][1][0])]
 
@@ -139,7 +123,9 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
                      thisStore[statement[2][0]]-= evalExp(thisStore, statement[3])
 
             elif (statement[1] == '^='):
-                 thisStore[statement[2][0]] ^= evalExp(thisStore, statement[3])
+                print(thisStore)
+                thisStore[statement[2][0]] ^= evalExp(thisStore, statement[3])
+                print('128:accessed thisStore')
 
             elif (statement[1] == '<=>'):
                 if isinstance(statement[3][0], list):
@@ -164,10 +150,10 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
         if invert:
             thisStore[statement[2][0]] = {}
         else:
-            if isinstance(statement[1], list):
+            if isinstance(statement[1], list): #配列の場合
                 thisStore[statement[2][0]].update(
                     {'value': makeStore(classMap, statement[1])})
-            else:
+            else: # オブジェクトの場合
                 if len(statement) == 4: # new separate type varName
                     m = mp.Manager()
                     q = m.Queue()
@@ -204,12 +190,6 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
         # ['call', 'test', [args]]
 
         if len(statement) == 4:  # call method of object
-            if "#q" in thisStore.keys(): ### before eval method of separated object
-                # push to Queue, return.
-                q = thisStore[statement[1]]['#q']
-                time.sleep(0.1)
-                q.put([statement[2], statement[3], statement[0]])
-                return
 
             try:  # when caller is field
                 callerType = classMap[thisType]['fields'][statement[1]]
@@ -217,6 +197,41 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
                 callerType = thisStore[statement[1]]['type']
 
             callMethodInfo = classMap[callerType]['methods'][statement[2]]
+            argsInfo = callMethodInfo["args"]
+
+            haveAttachedArg = False
+
+            for i, a in enumerate(argsInfo):
+                # ex) args =  [{'name': 'a', 'type': 'int'}, {'name': 'b', 'type': 'int'}]
+                if type(a['type']) is list and  a['type'][1] == 'attached':
+                    print("attached arg")
+                    print(thisStore)
+                    haveAttachedArg= True
+                    break
+
+
+            if "#q" in thisStore.keys(): ### before eval method of separated object
+                # push to Queue, return.
+                # TODO check args is attached
+                q = thisStore[statement[1]]['#q']
+                time.sleep(0.1)
+                if haveAttachedArg:
+                    print(statement[2], statement[3], statement[0])
+                    print('have attached arg')
+                    parent_conn, child_conn = mp.Pipe()
+                    q.put([statement[2], statement[3], statement[0], child_conn])
+                    parent_conn.recv()
+                    print('received')
+                    print(statement)
+                    print(hex(id(thisStore)))
+                    print(thisStore)
+                    return
+                else:
+                    q.put([statement[2], statement[3], statement[0]])
+                    return
+
+
+
             callMethodName = statement[2]
             storeToPass = thisStore[statement[1]]
             argsPassed = statement[3]
@@ -248,7 +263,7 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
 
         for i, a in enumerate(argsInfo):
             # ex) args =  [{'name': 'a', 'type': 'int'}, {'name': 'b', 'type': 'int'}]
-            if a['type'] == 'int':
+            if a['type'] == 'int' or a['type'][0] == 'int':
                 storeToPass[a['name']] = thisStore[argsPassed[i]]
             else:
                 storeToPass[a['name']] = thisStore[argsPassed[i]]
@@ -363,7 +378,7 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
             exp1 = statement[3]
             exp2 = statement[7]
             stmts = statement[4]
-
+        print(id1)
         thisStore[id1] = evalExp(thisStore, exp1)
         if statement[1] != 'int':
             thisStore[id1]['type'] = statement[1]
@@ -392,8 +407,21 @@ def interpreter(objName, classMap, className, q, store):
             methodName = request[0]
             args = request[1]
             callORuncall = request[2]
-            startStatement = [callORuncall, objName, methodName, args, 'separate']
-            evalStatement(classMap,
+            if len(request) == 4:
+                startStatement = [callORuncall, objName, methodName, args, 'separate']
+                evalStatement(classMap,
+                          startStatement,
+                          store,
+                          className,
+                          invert)
+                print('send')
+                print(objName)
+                print(hex(id(store)))
+                print(store)
+                request[3].send('signal')
+            else:
+                startStatement = [callORuncall, objName, methodName, args, 'separate']
+                evalStatement(classMap,
                           startStatement,
                           store,
                           className,

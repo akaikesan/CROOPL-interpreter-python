@@ -24,21 +24,28 @@ class Fib
             print xs[0]
             xs[0] <=> xs[1]
         fi xs[0] = xs[1]
-     method get (int out)
+
+      method get (int attached out) // attached(lockされる), detachable(lockされない) 何も書いてないとattached
+  //   method get (int  out) // attached(lockされる), detachable(lockされない) 何も書いてないとattached
         out ^= xs[1]
-  
+
+     method pr (int r)
+        print r
+
 class Program
     int result
     int n
 
     method main()
-        n ^= 4
+        n ^= 8
         local Fib f = nil
         new separate Fib f
         call f::init()
         call f::fib(n)
-        call f::get(result)
+        call f::get(result)  //wait
+        print result
         uncall f::fib(n)
         uncall f::init()
         delete Fib f
         delocal Fib f = nil
+

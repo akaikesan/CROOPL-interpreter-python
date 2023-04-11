@@ -1,9 +1,13 @@
 from rooplppEval import makeStore, evalStatement
+import multiprocessing as mp
 
 # separateを呼ばないver
 def interpreter(objName, classMap, className, q, store):
     invert = False
     print("interpreter of "+objName+ " start")
+    lock = mp.Lock()
+    s = q.qsize()
+    print(s)
     while(True):
         if q.qsize() == 0:
             continue
