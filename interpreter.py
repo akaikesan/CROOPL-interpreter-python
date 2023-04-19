@@ -1,8 +1,8 @@
-from rooplppEval import makeStore, evalStatement
+from rooplppEval import evalStatement
 import multiprocessing as mp
 
 # separateを呼ばないver
-def interpreter(objName, classMap, className, q, store):
+def interpreter(objName, classMap, className, q, store, sharedStore = None):
     invert = False
     print("interpreter of "+objName+ " start")
     lock = mp.Lock()

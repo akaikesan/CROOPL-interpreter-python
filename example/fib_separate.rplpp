@@ -21,13 +21,13 @@ class Fib
             n -= 1
             call fib(n)
             xs[0] += xs[1]
-            print xs[0]
             xs[0] <=> xs[1]
         fi xs[0] = xs[1]
 
       method get (int attached out) // attached(lockされる), detachable(lockされない) 何も書いてないとattached
   //   method get (int  out) // attached(lockされる), detachable(lockされない) 何も書いてないとattached
         out ^= xs[1]
+        print out
 
      method pr (int r)
         print r
@@ -43,6 +43,7 @@ class Program
         call f::init()
         call f::fib(n)
         call f::get(result)  //wait
+        print 99
         print result
         uncall f::fib(n)
         uncall f::init()

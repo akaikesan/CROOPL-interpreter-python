@@ -3,7 +3,7 @@ import sys
 import time
 
 from rooplppLexer import tokens
-from rooplppEval import  makeStore 
+from rooplppEval import  makeStore, makeSharedStore
 from interpreter import interpreter
 
 classMap = {}
@@ -333,12 +333,20 @@ def yacc_test():
     print("making thread")
     m = mp.Manager()
     q = m.Queue()
+    sharedStore = m.dict()
     ms = makeStore(classMap, "Program")
+    makeSharedStore(classMap, "Program", sharedStore)
+    sharedStore['#q'] = q
     ms['#q'] = q
-    print(q.qsize())
     initStore = m.dict()
     initStore['program'] = ms
-    p = mp.Process(target = interpreter, args=('program',classMap, "Program", q, initStore))
+    initStore2 = m.dict()
+    initStore2['program'] = sharedStore
+    print(initStore2)
+    print(initStore2['program'])
+    print(initStore)
+
+    p = mp.Process(target = interpreter, args=('program',classMap, "Program", q, initStore, initStore2))
     #------- スレッド生成
     p.start()
 
