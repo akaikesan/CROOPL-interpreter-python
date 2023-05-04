@@ -34,10 +34,11 @@ class Program
     method main()
         n ^= 7
         local Fib f = nil
-        new separate Fib f
+        new  Fib f
         call f::init()
         call f::fib(n)
         call f::get(result)
+        print result
         uncall f::fib(n)
         uncall f::init()
         delete Fib f

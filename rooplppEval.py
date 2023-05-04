@@ -55,10 +55,13 @@ def makeSeparatedProcess(classMap,
                          ):
 
     print("making Process")
-
     global m
-    m = mp.Manager()
-    q = m.Queue()
+    if varName is 'program':
+        m = mp.Manager()
+        q = m.Queue()
+    else:
+        q = m.Queue()
+
 
     addSeparatedObjToStore(classMap,
                            ObjType,
@@ -600,6 +603,9 @@ def interpreter(classMap,
 
     invert = False
     print("interpreter of " + className + ":"+objName + " start")
+
+    global m
+    m = mp.Manager()
     global ProcessObjName
     ProcessObjName = objName
     global ProcessRefCounter 
@@ -618,7 +624,7 @@ def interpreter(classMap,
 
 
             if len(request) == 4:
-                # attahced object's call
+                # attached object's call
                 startStatement = [callORuncall,
                                   methodName,
                                   args ]
