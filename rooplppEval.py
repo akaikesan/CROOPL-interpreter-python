@@ -1,15 +1,20 @@
-import copy
 import multiprocessing as mp
 import time
 
 
+# Storeはfオブジェクトを使いたい場合、{, f:{}, ...} の形でevalStatementに渡す。
+
+
 def makeStore(classMap, className):
+
     st = {}
+
     if isinstance(className, list):  # Array
         if className[0][0] == 'int':
             st = [0] * int(className[0][1][0])
         else:
             st = [{}] * int(className[0][1][0])
+
     else:
         for f in classMap[className]['fields'].keys():
 
@@ -24,30 +29,102 @@ def makeStore(classMap, className):
 
     return st
 
-def makeSharedStore(classMap, className, sharedStore):
-    if isinstance(className, list):  # Array
-        raise Exception('Array is not supported in shared store.')
-    else:
-        for f in classMap[className]['fields'].keys():
 
-            if classMap[className]['fields'][f] == 'int':
-                # 0 initialized
-                sharedStore[f] = 0
-            else:
-                # TODO: ex) AクラスのfieldをAクラス内で宣言したら、エラーを出す。
-                #          現在は無限再帰のpython側のエラーとなっている。
-                # st[f] = makeStore(classMap, classMap[className]['fields'][f])
-                sharedStore['type'] = className
-                sharedStore[f] = {}
 
-def getFromStore(store, varName):
-    if varName in store:
-        return store[varName]
-    else:
-        return {}
+def addSeparatedObjToStore(classMap, className, varName, globalStore):
+    newObj = {}
+    
+    for f in classMap[className]['fields'].keys():
+        if classMap[className]['fields'][f] == 'int':
+            # 0 initialized
+            newObj[f] = 0
+        else:
+            newObj['type'] = className
+            newObj[f] = {}
 
-def setToStore(store, varName, value):
-    store[varName] = value
+    globalStore[varName] = newObj 
+
+
+
+
+ 
+def makeSeparatedProcess(classMap,
+                         ObjType,
+                         varName,
+                         globalStore
+                         ):
+
+    print("making Process")
+
+    global m
+    m = mp.Manager()
+    q = m.Queue()
+
+    addSeparatedObjToStore(classMap,
+                           ObjType,
+                           varName, 
+                           globalStore)
+
+    updateGlobalStore(globalStore, varName, '#q', q)
+    p = mp.Process(target = interpreter, 
+                   args=(classMap,
+                         ObjType,
+                         varName,
+                         q,
+                         globalStore))
+
+    time.sleep(0.2)
+    p.start()
+
+    return q
+
+
+
+
+
+def checkVarIsSeparated(globalStore, varName, localStore):
+    if localStore != None:
+        return False
+    for v in globalStore.keys():
+        if v == varName:
+            return True
+    return False
+
+
+
+
+
+def checkObjIsDeletable(varList, env):
+    for k in varList :
+        if  not (env[k] == {} or env[k] == 0):
+            raise Exception("you can invert-new only nil-initialized object")
+
+
+
+
+
+def checkListIsDeletable(list):
+    for i in list:
+        if i != 0:
+            raise Exception("you can invert-new only 0-initialized array")
+
+
+# this is why Here use proxy ↓
+# https://stackoverflow.com/questions/26562287/value-update-in-manager-dict-not-reflected
+def updateGlobalStore(globalStore, objName, varName, value):
+    proxy = globalStore[objName]
+    proxy[varName] = value
+    globalStore[objName] = proxy
+
+
+
+
+
+def getType(classMap, thisType, varName):
+    return classMap[thisType]['fields'][varName]
+    
+
+
 
 
 def checkNil(object):
@@ -60,6 +137,10 @@ def checkNil(object):
             return {}
     else:
         return object
+
+
+
+
 
 def evalExp(thisStore, exp):
     if len(exp) == 1:  # [<int>] or [<varName>thisS
@@ -92,158 +173,244 @@ def evalExp(thisStore, exp):
             return evalExp(thisStore, exp[0]) and evalExp(thisStore, exp[2])
 
 
-def evalStatement(classMap, statement, thisStore, thisType, invert):
+
+
+
+def getAssignmentResult(assignment, invert, left, right):
+    if (assignment == '^='):
+        return left ^ right
+    if invert:
+        if assignment == '+=':
+            return  left - right
+        elif assignment == '-=':
+            return left + right
+    else:
+        if assignment == '+=':
+            return left + right
+        elif assignment == '-=':
+            return left - right
+
+
+
+
+
+def evalStatement(classMap,
+                  statement,
+                  globalStore,
+                  envObjName,
+                  thisType,
+                  invert,
+                  localStore = None):
 
     if statement is None:
         return
-    if (statement[0] == 'assignment'): # p[0] = ['assignment', p[2], p[1], p[3]]
+    if (statement[0] == 'assignment'): 
+        # p[0] = ['assignment', p[2], p[1], p[3]]
+        # ex) x += 2+1 -> ['assignment', +=, x, 2+1] 
         if isinstance(statement[2][0], list):
-            if (statement[1] == '+='):
-                if invert:
-                    thisStore[statement[2][0][0]]['value'][int(
-                        statement[2][0][1][0])] -= evalExp(thisStore, statement[3])
-                else:
-                    thisStore[statement[2][0][0]]['value'][int(
-                        statement[2][0][1][0])] += evalExp(thisStore, statement[3])
-
-            elif (statement[1] == '-='):
-                if invert:
-                    thisStore[statement[2][0][0]]['value'][int(
-                        statement[2][0][1][0])] += evalExp(thisStore, statement[3])
-                else:
-                    thisStore[statement[2][0][0]]['value'][int(
-                        statement[2][0][1][0])] -= evalExp(thisStore, statement[3])
-
-            elif (statement[1] == '^='):
-                copy = thisStore[statement[2][0][0]]
-                copy['value'][int(statement[2][0][1][0])] ^= evalExp(thisStore, statement[3])
-                thisStore[statement[2][0][0]] = copy
-
-            elif (statement[1] == '<=>'):
+            # if list Elem will be assigned
+            if (statement[1] == '<=>'):
                 if isinstance(statement[3][0], list):
-                    rightSide = thisStore[statement[3][0][0]]['value'][int(statement[3][0][1][0])]
+                    # if list Elem will be assigned to list
+                    pass
                 else:
-                    rightSide = thisStore[statement[3][0]]
+                    pass
+            else:
 
-                tmp = thisStore[statement[2][0][0]]['value'][int(statement[2][0][1][0])]
-                thisStore[statement[2][0][0]]['value'][int(
-                    statement[2][0][1][0])] = rightSide
+                nameOfList = statement[2][0][0]
+                try:
+                    index = int(statement[2][0][1][0])
+                except:
+                    raise Exception('you must input index integer for list. not String')
 
-                if isinstance(statement[3][0], list):
-                    thisStore[statement[3][0][0]]['value'][int(statement[3][0][1][0])] = tmp
+                if localStore is None: 
+                    result = getAssignmentResult(
+                            statement[1],
+                            invert,
+                            globalStore[envObjName][nameOfList][index],
+                            evalExp(globalStore[envObjName], statement[3])
+                    )
+                    updateGlobalStore(
+                            globalStore, 
+                            envObjName, 
+                            statement[2][0], 
+                            result
+                    )
                 else:
-                    thisStore[statement[3][0]] = tmp
+                    result = getAssignmentResult(statement[1],
+                                             invert,
+                                             localStore[envObjName][nameOfList][index],
+                                             evalExp(localStore[envObjName], statement[3])
+                                             )
+                    localStore[envObjName][nameOfList][index] = result
 
         else:
 
-            if (statement[1] == '+='):
-                if invert:
-                     thisStore[statement[2][0]]-= evalExp(thisStore, statement[3])
-                else:
-                     thisStore[statement[2][0]]+= evalExp(thisStore, statement[3])
-
-            elif (statement[1] == '-='):
-                if invert:
-                     thisStore[statement[2][0]]+= evalExp(thisStore, statement[3])
-                else:
-                     thisStore[statement[2][0]]-= evalExp(thisStore, statement[3])
-
-            elif (statement[1] == '^='):
-
-                thisStore[statement[2][0]] ^= evalExp(thisStore, statement[3])
-
-            elif (statement[1] == '<=>'):
+            if (statement[1] == '<=>'):
+                # swap
                 if isinstance(statement[3][0], list):
-                    rightSide = thisStore[statement[3][0][0]]['value'][int(statement[3][0][1][0])]
+                    # if list Elem will be assigned to var
+                    pass
                 else:
-                    rightSide = thisStore[statement[3][0]]
+                    pass
 
-                tmp = thisStore[statement[2][0]]
-                thisStore[statement[2][0]] = rightSide
 
-                if isinstance(statement[3][0], list):
-                    thisStore[statement[3][0][0]]['value'][int(statement[3][0][1][0])] = tmp
+            else:
+                # +=, -=, ^=, !=, &=  etc...
+                result = getAssignmentResult(statement[1],
+                                             invert,
+                                             globalStore[envObjName][statement[2][0]],
+                                             evalExp(globalStore[envObjName], statement[3])
+                                             )
+                if localStore is None: 
+                    updateGlobalStore(globalStore, 
+                                      envObjName, 
+                                      statement[2][0], 
+                                      result
+                                      )
                 else:
-                    thisStore[statement[3][0]] = tmp
+                    localStore[statement[2][0]] = result
 
     elif (statement[0] == 'print'):
-        print(evalExp(thisStore, statement[1]))
-
+        pass
     elif (statement[0] == 'skip'):
         pass
     elif (statement[0] == 'new'):
+        # ['new', className, varName, 'separate']
+        # ['new', className, [varName]]
+
         if invert:
-            thisStore[statement[2][0]] = {}
-        else:
-            if isinstance(statement[1], list): #配列の場合
-                thisStore[statement[2][0]] ={'value': makeStore(classMap, statement[1]) }
-            else: # オブジェクトの場合
-                if len(statement) == 4: 
-                    # new separate type varName
-                    m = mp.Manager()
-                    q = m.Queue()
-                    ms = makeStore(classMap, statement[1])
-                    sharedStore = m.dict()
-                    makeSharedStore(classMap, statement[1], sharedStore)
-                    sharedStore['#q'] = q
-                    temp  = m.dict()
-                    print('thisStore:')
-                    print(thisStore)
-                    thisStore[statement[2][0]] = sharedStore
-
-                    p = mp.Process(target = interpreter, args=(statement[2][0],classMap, statement[1], q, thisStore, sharedStore))
-
-                    p.start()
-
-                    time.sleep(0.1)
+            # delete (inverted new)
+            if isinstance(statement[1], list): 
+                # delete list
+                if localStore is None:
+                    checkListIsDeletable(globalStore[envObjName][statement[2][0]])
+                    updateGlobalStore(globalStore,
+                                      envObjName,
+                                      statement[2][0],
+                                      {}
+                                      )
                 else:
-                    thisStore[statement[2][0]].update(
-                        makeStore(classMap, statement[1]))
+                    checkListIsDeletable(localStore[envObjName][statement[2][0]])
+                    localStore[envObjName][statement[2][0]] = {}
+
+            else: 
+                # delete object
+                if localStore is None: 
+                    checkObjIsDeletable(globalStore[envObjName][statement[2][0]].keys(),
+                                        globalStore[envObjName][statement[2][0]])
+                    updateGlobalStore(globalStore, envObjName, statement[2][0], {})
+                else:
+                    checkObjIsDeletable(localStore[envObjName][statement[2][0]].keys(),
+                                        localStore[envObjName][statement[2][0]])
+                    localStore[envObjName][statement[2][0]] = {}
+
+        else:
+            # simple new
+            if isinstance(statement[1], list): 
+                # new list
+                if localStore == None:
+                    updateGlobalStore(globalStore, envObjName, statement[2][0], makeStore(classMap, statement[1]))
+                else:
+                    localStore[envObjName][statement[2][0]] = makeStore(classMap, statement[1])
+            else: 
+                # new object
+                if len(statement) == 4: 
+                    # ['new', className, [varName], 'separate']
+
+
+                    global ProcessRefCounter
+                    global ProcessObjName
+
+                    if ProcessRefCounter == None:
+                        raise Exception("ProcessRefCounter is None")
+                    if ProcessObjName == None:
+                        raise Exception("ProcessObjName is None")
+                    ProcessRefCounter += 1
+
+                    varName = ProcessObjName + ':' + str(ProcessRefCounter) + ':' + statement[2][0]
+
+                    if localStore == None:
+                        updateGlobalStore(globalStore,
+                                          envObjName,
+                                          statement[2][0],
+                                          varName)
+                    else:
+                        localStore[envObjName][statement[2][0]] = varName
+
+
+
+                    makeSeparatedProcess(classMap,
+                                         statement[1],
+                                         varName,
+                                         globalStore)
+
+
+                else:
+                    # new type varName
+                    if localStore == None:
+                        updateGlobalStore(globalStore,
+                                          envObjName,
+                                          statement[2][0],
+                                          makeStore(classMap, statement[1])
+                                          )
+                    else:
+                        localStore[envObjName][statement[2][0]] = makeStore(classMap, statement[1])
 
 
     elif (statement[0] == 'delete'):
         if invert:
-            thisStore[statement[2][0]].update(
-                makeStore(classMap, statement[1]))
+            pass
         else:
-            thisStore[statement[2][0]] = {}
+            pass
     elif (statement[0] == 'copy'):
         if invert:
-            thisStore[statement[3][0]] = {}
+            pass
         else:
             # TODO: typecheck
-            thisStore[statement[3][0]] = thisStore[statement[2][0]]
+            pass
 
     elif (statement[0] == 'call' or statement[0] == 'uncall'):
         # ['call', 'tc', 'test', [args]]
-        # ['call', 'tc', 'test', [args], 'separate']
         # ['call', 'test', [args]]
 
         if len(statement) == 4:  # call method of object
 
-            try:  # when caller is field
-                callerType = classMap[thisType]['fields'][statement[1]]
-            except:  # when caller is arg or local
-                callerType = thisStore[statement[1]]['type']
-
+            callerType = classMap[thisType]['fields'][statement[1]]
             callMethodInfo = classMap[callerType]['methods'][statement[2]]
             argsInfo = callMethodInfo["args"]
+            callMethodName = statement[2]
+            stmts = callMethodInfo["statements"]
 
-            haveAttachedArg = False
+            if localStore == None:
+                callerObjGlobalName = globalStore[envObjName][statement[1]]
+            else:
+                callerObjGlobalName = localStore[envObjName][statement[1]]
+
+
+            if isinstance(callerObjGlobalName, str):
+                callerIsSeparated = checkVarIsSeparated(globalStore, callerObjGlobalName, localStore) 
+            else:
+                callerIsSeparated = False
+
+            args = statement[3]
+
+            haveAttachedArg = True 
 
             for i, a in enumerate(argsInfo):
                 # ex) args =  [{'name': 'a', 'type': 'int'}, {'name': 'b', 'type': 'int'}]
-                if type(a['type']) is list and  a['type'][1] == 'attached':
-                    haveAttachedArg= True
+                if type(a['type']) is list and  a['type'][1] == 'detachable':
+                    haveAttachedArg= False 
                     break
 
+            if callerIsSeparated: 
 
-            if "#q" in thisStore.keys(): 
-                ### you are calling method of separated object
+                # you are calling method of separated object
                 # push to Queue, return.
                 # TODO check args is attached
-                q = thisStore[statement[1]]['#q']
+                q = globalStore[callerObjGlobalName]['#q']
                 time.sleep(0.1)
+
                 if haveAttachedArg:
                     parent_conn, child_conn = mp.Pipe()
                     q.put([statement[2], statement[3], statement[0], child_conn])
@@ -251,79 +418,82 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
                     print('received')
                     return
                 else:
+                    print('hello')
                     q.put([statement[2], statement[3], statement[0]])
                     return
 
-
-
-            callMethodName = statement[2]
-            storeToPass = thisStore[statement[1]]
-            argsPassed = statement[3]
-            returnStore = thisStore[statement[1]]
-
-        elif len(statement) == 5:  
-
-            ### eval method of separated object
             try:  # when caller is field
-                callerType = classMap[thisType]['fields'][statement[1]]
+                pass
             except:  # when caller is arg or local
-                callerType = thisStore[statement[1]]['type']
+                pass
 
-            callMethodInfo = classMap[callerType]['methods'][statement[2]]
-            callMethodName = statement[2]
-            storeToPass = thisStore[statement[1]]
-            argsPassed = statement[3]
-            returnStore = thisStore[statement[1]]
 
-        else:  # local call
-            # if this is separated, thisStore is not correct
+
+
+            if  localStore == None:
+                # top-level CALL
+                tmp = globalStore[envObjName]
+            elif localStore != None:
+                # nested Objects CALL
+                tmp = localStore[envObjName]
+            else:
+                raise Exception(
+                        "call error: caller not separated and localStore is None"
+                        )
+
+            if statement[0] == 'uncall':
+                invert = not invert 
+
+            if invert:
+                stmts = reversed(stmts)
+
+            for stmt in stmts:
+                evalStatement(classMap,
+                              stmt,
+                              globalStore, 
+                              statement[1],
+                              thisType, 
+                              invert,
+                              tmp)
+
+            if statement[0] == 'uncall':
+                #end of uncall
+                invert = not invert 
+
+            if localStore == None :
+                # update globalStore if this is top-level CALL
+                globalStore[envObjName] = tmp
+
+                
+
+
+                
+
+
+        else:  
+            # local call
             callerType = thisType
             callMethodName = statement[1]
             callMethodInfo = classMap[callerType]['methods'][callMethodName]
-            storeToPass = thisStore  # 関数を実行するために必要なstore
-            returnStore = thisStore
-            argsPassed = statement[2]
+            callerIsSeparated = False
 
-        stmts = callMethodInfo["statements"]
-        argsInfo = callMethodInfo["args"]
+            stmts = callMethodInfo["statements"]
+            argsInfo = callMethodInfo["args"]
 
-        for i, a in enumerate(argsInfo):
-            # ex) args =  [{'name': 'a', 'type': 'int'}, {'name': 'b', 'type': 'int'}]
-            if a['type'] == 'int' or a['type'][0] == 'int':
-                storeToPass[a['name']] = thisStore[argsPassed[i]]
-            else:
-                storeToPass[a['name']] = thisStore[argsPassed[i]]
-                storeToPass[a['name']]['type'] = a['type']
 
-        if statement[0] == 'call':
-            print('aa')
-            print(stmts)
+            if statement[0] == 'uncall':
+                invert = not invert
+
             if invert:
                 stmts = reversed(stmts)
             for stmt in stmts:
-                evalStatement(classMap, stmt, storeToPass, callerType, invert)
-            
+                evalStatement(classMap, stmt, globalStore, envObjName, thisType, invert)
+                
+            if statement[0] == 'uncall':
+                invert = not invert
 
-        elif statement[0] == 'uncall':
-            invert = not invert
-            for stmt in reversed(stmts):
-                evalStatement(classMap, stmt, storeToPass, callerType, invert)
-            invert = not invert
-        for i, a in enumerate(argsInfo):
-            # ex) args =  [{'name': 'a', 'type': 'int'}, {'name': 'b', 'type': 'int'}]
-            # これでargumentにわたした変数を更新
-            thisStore[argsPassed[i]] = storeToPass[a['name']]
+                
 
-
-        # local callの場合、argument以外にmember変数も更新される可能性。
-        # よってargument以外も更新。
-        # returnStoreにあるkeyのみに更新をかける。
-        for key in storeToPass.keys():
-            try:
-                returnStore[key]
-            except:
-                continue
-            returnStore[key] = storeToPass[key]
 
 
     elif (statement[0] == 'if'):  # statement[1:4] = [e1, s1, s2, e2]
@@ -334,7 +504,7 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
             e1 = statement[1]
             e2 = statement[4]
 
-        e1 = evalExp(thisStore, e1)
+        e1 = evalExp(globalStore, e1)
         if e1:
             if invert:
                 statements = reversed(statement[2])
@@ -347,7 +517,7 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
                 statements = statement[3]
 
         for s in statements:
-            evalStatement(classMap, s, thisStore, thisType, invert)
+            pass
 
     elif (statement[0] == 'from'):  # statement[1:4] = [e1, s1, s2, e2]
         if invert:
@@ -361,7 +531,7 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
             s1 = statement[2]
             s2 = statement[3]
 
-        result_e1 = evalExp(thisStore, e1)
+        result_e1 = evalExp(globalStore, e1)
 
         if not result_e1:
             raise Exception("Loop initial Condition is False")
@@ -370,20 +540,20 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
         while result_e1:  # e1  e2
 
             for s in s1:  # s1  s1
-                evalStatement(classMap, s, thisStore, thisType, invert)
+                pass
 
-            if evalExp(thisStore, e2):  # e2 e1
+            if evalExp(globalStore, e2):  # e2 e1
                 break
             else:
                 if invert:
                     for s in reversed(s2):
-                        evalStatement(classMap, s, thisStore, thisType, invert)
+                        pass
                 else:
                     for s in s2:
-                        evalStatement(classMap, s, thisStore, thisType, invert)
+                        pass
 
             # after 1st loop, e1 is false.
-            result_e1 = not evalExp(thisStore, e1)
+            result_e1 = not evalExp(globalStore, e1)
 
             if not result_e1:
                 if invert:
@@ -407,67 +577,70 @@ def evalStatement(classMap, statement, thisStore, thisType, invert):
             exp1 = statement[3]
             exp2 = statement[7]
             stmts = statement[4]
-        thisStore[id1] = evalExp(thisStore, exp1)
         if statement[1] != 'int':
-            thisStore[id1]['type'] = statement[1]
+            pass
 
         for s in stmts:
-            evalStatement(classMap, s, thisStore, thisType, invert)
+            pass
 
         try:
-            thisStore[id1].pop('type')
+            pass
         except:
             pass
 
-        if thisStore[id2] == evalExp(thisStore, exp2):
-            thisStore.pop(statement[6][0])
-        else:
-            raise Exception("delocal Error")
+            #raise Exception("delocal Error")
 
-def interpreter(objName, classMap, className, q, store, sharedStore = None):
+
+
+def interpreter(classMap, 
+                className, 
+                objName,
+                q, 
+                globalStore):
+
     invert = False
-    print("interpreter of " + objName + " start")
+    print("interpreter of " + className + ":"+objName + " start")
+    global ProcessObjName
+    ProcessObjName = objName
+    global ProcessRefCounter 
+    ProcessRefCounter = 0
+
     while(True):
-        if q.qsize() == 0:
-            continue
-        else:
+
+        if q.qsize() != 0:
+            # an object sent request to this Process
+
+            # sort Request Elements
             request = q.get()
             methodName = request[0]
             args = request[1]
             callORuncall = request[2]
+
+
             if len(request) == 4:
-                # attahced call
-                startStatement = [callORuncall, objName, methodName, args, 'separate']
+                # attahced object's call
+                startStatement = [callORuncall,
+                                  methodName,
+                                  args ]
                 evalStatement(classMap,
                           startStatement,
-                          store,
+                          globalStore,
+                          objName,
                           className,
                           invert)
                 print('send')
-                #print(type(store))
-                #print(store)
                 request[3].send('signal')
+
             else:
-                startStatement = [callORuncall, objName, methodName, args, 'separate']
+                # detachable object's call
+                startStatement = [callORuncall,
+                                  methodName,
+                                  args]
+                                  
                 evalStatement(classMap,
                           startStatement,
-                          store,
+                          globalStore,
+                          objName,
                           className,
                           invert)
-
-"""
-発表：BNFを載せる。
-- python
-- data raceが起きそうな場所がある
-目標：datarace が起きないようにする。
-ポイント：情報が失われないから、どの時点で止めても良い。今やっている情報を全て持っている。
-上書きすると、今までの情報が全て失われる。
-履歴が残っているのと同じなので、任意の時点で何をやっているか全部わかる。だから効率は悪い。
-平行だと、やり直そうとするとやり直せないけど、可逆だと、やり直せる。
-
-構成：
-枕詞
-BNF
-説明
-
-"""
+        time.sleep(0.5)

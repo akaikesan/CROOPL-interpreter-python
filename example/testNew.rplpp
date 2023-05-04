@@ -1,0 +1,33 @@
+class Program
+    int result
+    int[] xs
+    Fib f
+
+    method main()
+        call init()
+        result += 100
+        new Fib f
+        call f::fib()
+
+    method init()
+        new int[2] xs
+
+class Fib
+    int[] xs
+    Fib f
+    int x
+    
+    method init()
+        new int[2] xs
+    
+    method minus()
+        xs[1] -= 100
+  
+    method fib()
+        new Fib f
+        call f::init()
+        call f::minus()
+
+     method get (int out)
+        out ^= xs[1]
+  

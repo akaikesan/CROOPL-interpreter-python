@@ -3,8 +3,7 @@ import sys
 import time
 
 from rooplppLexer import tokens
-from rooplppEval import  makeStore, makeSharedStore
-from interpreter import interpreter
+from rooplppEval import   makeSeparatedProcess
 
 classMap = {}
 
@@ -214,6 +213,7 @@ def p_statement(p):
     | NEW className y
     | NEW SEPARATE className y
     | DELETE className y
+    | DELETE SEPARATE className y
     | SKIP
     | PRINT exp
     | y SWAP y
@@ -235,7 +235,7 @@ def p_statement(p):
             p[0] = [p[1], p[2], p[3]]
         else:
             p[0] = ['assignment', p[2], p[1], p[3]]
-    elif len(p) == 5: # copy
+    elif len(p) == 5: 
         if p[1] == 'new' or p[1] == 'delete':
             p[0] = [p[1], p[3], p[4], p[2]]
         else:
@@ -319,43 +319,56 @@ def p_exp(p):
 
 
 def yacc_test():
+    # open file
     args = sys.argv
+
     if len(args) == 1:
         raise Exception("filename not provided.")
+
     f = open(args[-1], 'r')
     data = f.read()
     f.close()
 
+    # parse input program
     parser = yacc.yacc()
-    result = parser.parse(data)
+    parser.parse(data)
 
-    #------- スレッド生成時の下準備
-    print("making thread")
+    # generate Process
     m = mp.Manager()
-    q = m.Queue()
-    sharedStore = m.dict()
-    ms = makeStore(classMap, "Program")
-    makeSharedStore(classMap, "Program", sharedStore)
-    sharedStore['#q'] = q
-    ms['#q'] = q
-    initStore = m.dict()
-    initStore['program'] = ms
-    initStore2 = m.dict()
-    initStore2['program'] = sharedStore
-    print(initStore2)
-    print(initStore2['program'])
-    print(initStore)
+    globalStore = m.dict()
+    varType = 'Program'
+    varName = 'program'
+    classMap[varType]['fields'][varName] = 'Program'
+    q = makeSeparatedProcess(classMap, varType, varName, globalStore)
 
-    p = mp.Process(target = interpreter, args=('program',classMap, "Program", q, initStore, initStore2))
-    #------- スレッド生成
-    p.start()
+    # request process to run main func
+    q.put(["main", [], "call"])
 
-    time.sleep(0.1)
+    while(1):
+        time.sleep(2)
+        print(globalStore)
+        pass
 
-    q.put(["main", []])
 
 
 if __name__ == '__main__':
     import multiprocessing as mp
     mp.set_start_method('spawn', True)
     yacc_test()
+
+"""
+発表：BNFを載せる。
+- python
+- data raceが起きそうな場所がある
+目標：datarace が起きないようにする。
+ポイント：情報が失われないから、どの時点で止めても良い。今やっている情報を全て持っている。
+上書きすると、今までの情報が全て失われる。
+履歴が残っているのと同じなので、任意の時点で何をやっているか全部わかる。だから効率は悪い。
+平行だと、やり直そうとするとやり直せないけど、可逆だと、やり直せる。
+
+構成：
+枕詞
+BNF
+説明
+
+"""
