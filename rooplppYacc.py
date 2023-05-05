@@ -339,7 +339,9 @@ def yacc_test():
     varType = 'Program'
     varName = 'program'
     classMap[varType]['fields'][varName] = 'Program'
-    q = makeSeparatedProcess(classMap, varType, varName, globalStore)
+    makeSeparatedProcess(classMap, varType, varName, globalStore)
+
+    q = globalStore[varName]['#q']
 
     # request process to run main func
     q.put(["main", [], "call"])

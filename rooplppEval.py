@@ -97,7 +97,7 @@ def makeSeparatedProcess(classMap,
     time.sleep(0.2)
     p.start()
 
-    return q
+    return p
 
 
 
@@ -331,13 +331,39 @@ def evalStatement(classMap,
             else: 
                 # delete object
                 if localStore is None: 
-                    checkObjIsDeletable(globalStore[envObjName][statement[2][0]].keys(),
-                                        globalStore[envObjName][statement[2][0]])
-                    updateGlobalStore(globalStore, envObjName, statement[2][0], {})
+                    if len(statement) == 4:
+                        # delete separate
+                        print('delete top')
+                        topLevelName = globalStore[envObjName][statement[2][0]]
+                        checkObjIsDeletable(globalStore[topLevelName].keys(),
+                                            globalStore[envObjName])
+
+                        globalStore[topLevelName] = {}
+                        globalStore[envObjName][statement[2][0]] = {}
+
+
+                    else:
+                        checkObjIsDeletable(globalStore[envObjName][statement[2][0]].keys(),
+                                            globalStore[envObjName][statement[2][0]])
+                        updateGlobalStore(globalStore, envObjName, statement[2][0], {})
                 else:
-                    checkObjIsDeletable(localStore[envObjName][statement[2][0]].keys(),
-                                        localStore[envObjName][statement[2][0]])
-                    localStore[envObjName][statement[2][0]] = {}
+
+                    if len(statement) == 4:
+                        # delete separate
+
+                        print('delete local')
+                        topLevelName = localStore[envObjName][statement[2][0]]
+                        checkObjIsDeletable(globalStore[topLevelName].keys(),
+                                            globalStore[envObjName])
+
+                        globalStore[topLevelName] = {}
+                        localStore[envObjName][statement[2][0]] = {}
+
+
+                    else:
+                        checkObjIsDeletable(localStore[envObjName][statement[2][0]].keys(),
+                                            localStore[envObjName][statement[2][0]])
+                        localStore[envObjName][statement[2][0]] = {}
 
         else:
             # simple new
@@ -372,9 +398,10 @@ def evalStatement(classMap,
                     else:
                         localStore[envObjName][statement[2][0]] = varName
 
+                    global p
 
 
-                    makeSeparatedProcess(classMap,
+                    p = makeSeparatedProcess(classMap,
                                          statement[1],
                                          varName,
                                          globalStore)

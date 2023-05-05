@@ -1,6 +1,5 @@
 class Program
     Fib f
-    Fib g
 
     method main()
         new separate Fib f
