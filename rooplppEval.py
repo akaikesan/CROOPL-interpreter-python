@@ -51,6 +51,8 @@ def callOrUncall(invert, callUncall):
 
 def addSeparatedObjToStore(classMap, className, varName, globalStore):
     newObj = {}
+
+    
     
     for f in classMap[className]['fields'].keys():
         if classMap[className]['fields'][f] == 'int':
@@ -103,6 +105,7 @@ def makeSeparatedProcess(classMap,
     else:
         ProcDict[varName] = p
 
+    print('procDict state')
     print(ProcessObjName)
     print(ProcDict)
 
@@ -128,6 +131,8 @@ def checkVarIsSeparated(globalStore, varName, localStore):
 
 
 def checkObjIsDeletable(varList, env):
+    env['type'] = 0
+    env['#q'] = 0
     for k in varList :
         if  not (env[k] == {} or env[k] == 0):
             raise Exception("you can invert-new only nil-initialized object")
@@ -341,38 +346,54 @@ def evalStatement(classMap,
                     localStore[envObjName][statement[2][0]] = {}
 
             else: 
-                # delete object
+                # delete object (not list).
                 if localStore is None: 
+                    # global Scope
+
                     if len(statement) == 4:
                         # delete separate
-                        print('delete top')
+
+                        print(statement)
+                        print(envObjName)
+                        print(statement[2][0])
+                        print('delete global separated')
                         topLevelName = globalStore[envObjName][statement[2][0]]
+                        print(topLevelName)
+
                         checkObjIsDeletable(globalStore[topLevelName].keys(),
-                                            globalStore[envObjName])
+                                            globalStore[topLevelName])
+                        ProcDict[topLevelName].terminate()
 
-                        globalStore[topLevelName] = {}
-                        globalStore[envObjName][statement[2][0]] = {}
-
+                        globalStore.pop(topLevelName)
+                        updateGlobalStore(globalStore,
+                                          envObjName,
+                                          statement[2][0],
+                                          {}
+                                          )
 
                     else:
+                        # delete object (not separated)
                         checkObjIsDeletable(globalStore[envObjName][statement[2][0]].keys(),
                                             globalStore[envObjName][statement[2][0]])
                         updateGlobalStore(globalStore, envObjName, statement[2][0], {})
+
                 else:
-
+                    # local Scope
                     if len(statement) == 4:
+
                         # delete separate
-
-                        print('delete local')
+                        print('delete local separated')
                         topLevelName = localStore[envObjName][statement[2][0]]
-                        checkObjIsDeletable(globalStore[topLevelName].keys(),
-                                            globalStore[envObjName])
 
-                        globalStore[topLevelName] = {}
+                        checkObjIsDeletable(globalStore[topLevelName].keys(),
+                                            globalStore[topLevelName])
+                        ProcDict[topLevelName].terminate()
+
+                        globalStore.pop(topLevelName)
                         localStore[envObjName][statement[2][0]] = {}
 
-
                     else:
+                        # delete object (not separated)
                         checkObjIsDeletable(localStore[envObjName][statement[2][0]].keys(),
                                             localStore[envObjName][statement[2][0]])
                         localStore[envObjName][statement[2][0]] = {}
@@ -687,6 +708,12 @@ def interpreter(classMap,
     ProcessRefCounter = 0
 
     while(True):
+        
+        try:
+            x = q.qsize()
+        except:
+            print('ERROR:',ProcessObjName)
+            raise Exception("interpreter error")
 
         if q.qsize() != 0:
             # an object sent request to this Process

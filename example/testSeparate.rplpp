@@ -1,33 +1,31 @@
 class Program
     Fib f
-    Fib g
 
     method main()
         new separate Fib f
-        new separate Fib g
         call f::init()
         call f::initSeparate()
         call f::fib()
+        uncall f::fib()
+        uncall f::initSeparate()
 
 
 class Fib
     int[] xs
-    Fib f
-    int x
+    Fib g
     
     method init()
         new int[2] xs
 
     method initSeparate()
-        new separate Fib f
+        new separate Fib g
     
     method minus()
         xs[1] -= 100
   
     method fib()
-
-        call f::init()
-        call f::minus()
+        call g::init()
+        call g::minus()
 
      method get (int out)
         out ^= xs[1]
