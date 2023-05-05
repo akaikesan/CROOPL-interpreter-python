@@ -1,8 +1,10 @@
 class Program
     Fib f
+    Fib g
 
     method main()
         new separate Fib f
+        new separate Fib g
         call f::init()
         call f::initSeparate()
         call f::fib()

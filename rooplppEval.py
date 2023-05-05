@@ -94,10 +94,22 @@ def makeSeparatedProcess(classMap,
                          q,
                          globalStore))
 
+
+    global ProcDict
+    global ProcessObjName
+    if  varName == 'program':
+        ProcessObjName = 'InitialProcess'
+        ProcDict =  {'program':p}
+    else:
+        ProcDict[varName] = p
+
+    print(ProcessObjName)
+    print(ProcDict)
+
     time.sleep(0.2)
     p.start()
 
-    return p
+    return 
 
 
 
@@ -401,7 +413,7 @@ def evalStatement(classMap,
                     global p
 
 
-                    p = makeSeparatedProcess(classMap,
+                    makeSeparatedProcess(classMap,
                                          statement[1],
                                          varName,
                                          globalStore)
@@ -665,6 +677,8 @@ def interpreter(classMap,
     invert = False
     print("interpreter of " + className + ":"+objName + " start")
 
+    global ProcDict
+    ProcDict = {}
     global m
     m = mp.Manager()
     global ProcessObjName
