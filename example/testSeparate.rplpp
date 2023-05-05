@@ -4,7 +4,8 @@ class Program
 
     method main()
         new separate Fib f
-        new separate Fib g
+        call f::init()
+        call f::initSeparate()
         call f::fib()
 
 
@@ -15,17 +16,17 @@ class Fib
     
     method init()
         new int[2] xs
+
+    method initSeparate()
+        new separate Fib f
     
     method minus()
         xs[1] -= 100
   
     method fib()
-        new separate Fib f
-        call init()
+
         call f::init()
         call f::minus()
-        uncall f::minus()
-        uncall f::init()
 
      method get (int out)
         out ^= xs[1]

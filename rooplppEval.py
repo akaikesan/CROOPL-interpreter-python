@@ -31,6 +31,24 @@ def makeStore(classMap, className):
 
 
 
+
+
+def callOrUncall(invert, callUncall):
+    if callUncall == 'call':
+        if invert:
+            return 'uncall'
+        else:
+            return 'call'
+    elif callUncall == 'uncall':
+        if invert:
+            return 'call'
+        else:
+            return 'uncall'
+    else:
+        raise Exception("callUncall must be call or uncall")
+
+
+
 def addSeparatedObjToStore(classMap, className, varName, globalStore):
     newObj = {}
     
@@ -344,7 +362,7 @@ def evalStatement(classMap,
                         raise Exception("ProcessObjName is None")
                     ProcessRefCounter += 1
 
-                    varName = ProcessObjName + ':' + str(ProcessRefCounter) + ':' + statement[2][0]
+                    varName = ProcessObjName + ':' + str(ProcessRefCounter) + '_' + statement[2][0]
 
                     if localStore == None:
                         updateGlobalStore(globalStore,
@@ -427,15 +445,18 @@ def evalStatement(classMap,
                 q = globalStore[callerObjGlobalName]['#q']
                 time.sleep(0.1)
 
+                callUncall = callOrUncall(invert, statement[0])
+
                 if haveAttachedArg:
                     parent_conn, child_conn = mp.Pipe()
-                    q.put([statement[2], statement[3], statement[0], child_conn])
+                    q.put([statement[2], statement[3], callUncall,
+                           child_conn])
                     parent_conn.recv()
                     print('received')
                     return
                 else:
                     print('hello')
-                    q.put([statement[2], statement[3], statement[0]])
+                    q.put([statement[2], statement[3], callUncall])
                     return
 
             try:  # when caller is field
@@ -662,4 +683,3 @@ def interpreter(classMap,
                           objName,
                           className,
                           invert)
-        time.sleep(0.5)
