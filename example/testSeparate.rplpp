@@ -1,5 +1,6 @@
 class Program
     Fib f
+    int x
 
     method main()
         new separate Fib f

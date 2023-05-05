@@ -76,7 +76,7 @@ def makeSeparatedProcess(classMap,
 
     print("making Process")
     global m
-    if varName is 'program':
+    if varName == 'program':
         m = mp.Manager()
         q = m.Queue()
     else:
@@ -105,9 +105,6 @@ def makeSeparatedProcess(classMap,
     else:
         ProcDict[varName] = p
 
-    print('procDict state')
-    print(ProcessObjName)
-    print(ProcDict)
 
     time.sleep(0.2)
     p.start()
@@ -190,7 +187,8 @@ def checkNil(object):
 
 
 def evalExp(thisStore, exp):
-    if len(exp) == 1:  # [<int>] 
+    if len(exp) == 1:  
+        # [<int>] 
         if isinstance(exp[0], list):
             return thisStore[exp[0][0]][int(exp[0][1][0])]
 
@@ -204,7 +202,6 @@ def evalExp(thisStore, exp):
             # else exp[0] is varName
             return thisStore[exp[0]]
     else:
-        print(exp[0])
         if (exp[1] == '+'):
             return evalExp(thisStore, exp[0]) + evalExp(thisStore, exp[2])
         elif (exp[1] == '-'):
@@ -224,6 +221,10 @@ def evalExp(thisStore, exp):
             return e1 != e2
         elif (exp[1] == '&'):
             return evalExp(thisStore, exp[0]) and evalExp(thisStore, exp[2])
+        elif (exp[1] == '>'):
+            return evalExp(thisStore, exp[0]) > evalExp(thisStore, exp[2])
+        elif (exp[1] == '<'):
+            return evalExp(thisStore, exp[0]) < evalExp(thisStore, exp[2])
 
 
 
@@ -355,12 +356,7 @@ def evalStatement(classMap,
                     if len(statement) == 4:
                         # delete separate
 
-                        print(statement)
-                        print(envObjName)
-                        print(statement[2][0])
-                        print('delete global separated')
                         topLevelName = globalStore[envObjName][statement[2][0]]
-                        print(topLevelName)
 
                         checkObjIsDeletable(globalStore[topLevelName].keys(),
                                             globalStore[topLevelName])
@@ -384,7 +380,6 @@ def evalStatement(classMap,
                     if len(statement) == 4:
 
                         # delete separate
-                        print('delete local separated')
                         topLevelName = localStore[envObjName][statement[2][0]]
 
                         checkObjIsDeletable(globalStore[topLevelName].keys(),
@@ -640,7 +635,9 @@ def evalStatement(classMap,
             raise Exception("Loop initial Condition is False")
 
         # initially, e1 is true.
+        # e1 -> s1 -> e2 -> s2 -> e1
         while result_e1:  # e1  e2
+            print('loop')
 
             for s in s1:  # s1  s1
                 evalStatement(classMap, 
@@ -676,12 +673,18 @@ def evalStatement(classMap,
             else:
                 result_e1 = evalExp(localStore[envObjName], e1)
 
+            # result_e1 is while condition.
+            # if result_e1 is false, break while loop.
+            # but in roopl, result_e1 is true only first loop.
+            # after second loop, result_e1 is false permanently.
+            result_e1 = not result_e1 
+
             if not result_e1:
                 if invert:
-                    raise Exception("Loop initial Condition is False")
-                else:
                     raise Exception(
-                        "INVERTED : Loop initial Condition is False")
+                        "INVERTED : Loop initial Condition is True")
+                else:
+                    raise Exception("Loop initial Condition is True")
 
     # LOCAL:0 type:1 id:2 EQ exp:3  statements:4 DELOCAL type:5 id:6 EQ exp:7
     elif (statement[0] == 'local'):

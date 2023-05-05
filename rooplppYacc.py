@@ -295,6 +295,8 @@ def p_exp(p):
     | exp EQ exp
     | exp NEQ exp
     | exp AND exp
+    | exp GT exp
+    | exp LT exp
     '''
 
     if (len(p) == 2):
@@ -316,6 +318,10 @@ def p_exp(p):
             p[0] = [p[1], "=", p[3]]
         elif p[2] == '!=':
             p[0] = [p[1], "!=", p[3]]
+        elif p[2] == '>':
+            p[0] = [p[1], ">", p[3]]
+        elif p[2] == '<':
+            p[0] = [p[1], "<", p[3]]
 
 
 def yacc_test():
