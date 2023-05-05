@@ -6,7 +6,6 @@ class Program
         new separate Fib f
         new separate Fib g
         call f::fib()
-        uncall f::fib()
 
 
 class Fib
@@ -21,11 +20,12 @@ class Fib
         xs[1] -= 100
   
     method fib()
-        new Fib f
+        new separate Fib f
         call init()
         call f::init()
         call f::minus()
+        uncall f::minus()
+        uncall f::init()
 
      method get (int out)
         out ^= xs[1]
-  

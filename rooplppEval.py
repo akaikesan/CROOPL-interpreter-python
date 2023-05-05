@@ -115,9 +115,18 @@ def checkListIsDeletable(list):
 # this is why Here use proxy ↓
 # https://stackoverflow.com/questions/26562287/value-update-in-manager-dict-not-reflected
 def updateGlobalStore(globalStore, objName, varName, value):
-    proxy = globalStore[objName]
-    proxy[varName] = value
-    globalStore[objName] = proxy
+    if isinstance(varName, list):
+        proxy = globalStore[objName]
+        try:
+            index = int(varName[1][0])
+        except:
+            raise Exception('List index must be int')
+        proxy[varName[0]][index] = value
+        globalStore[objName] = proxy
+    else:
+        proxy = globalStore[objName]
+        proxy[varName] = value
+        globalStore[objName] = proxy
 
 
 
@@ -227,6 +236,10 @@ def evalStatement(classMap,
                     raise Exception('you must input index integer for list. not String')
 
                 if localStore is None: 
+                    print(invert)
+                    print(statement)
+                    print(envObjName)
+                    print(nameOfList)
                     result = getAssignmentResult(
                             statement[1],
                             invert,
