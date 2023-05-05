@@ -190,22 +190,28 @@ def checkNil(object):
 
 
 def evalExp(thisStore, exp):
-    if len(exp) == 1:  # [<int>] or [<varName>thisS
+    if len(exp) == 1:  # [<int>] 
         if isinstance(exp[0], list):
-            return thisStore[exp[0][0]]['value'][int(exp[0][1][0])]
+            return thisStore[exp[0][0]][int(exp[0][1][0])]
 
         if exp[0].isdecimal():
+            # int (exp[0] is string. turn it to int Here.)
             return int(exp[0])
         else:
             # keyがtypeだけのものも{}でreturnする必要がある。
             if exp[0] == 'nil':
                 return {}
+            # else exp[0] is varName
             return thisStore[exp[0]]
     else:
+        print(exp[0])
         if (exp[1] == '+'):
             return evalExp(thisStore, exp[0]) + evalExp(thisStore, exp[2])
         elif (exp[1] == '-'):
             return evalExp(thisStore, exp[0]) - evalExp(thisStore, exp[2])
+
+        elif (exp[1] == '/'):
+            return int(evalExp(thisStore, exp[0]) / evalExp(thisStore, exp[2]))
         elif (exp[1] == '='):
 
             e1 = checkNil(evalExp(thisStore, exp[0]))
@@ -271,10 +277,6 @@ def evalStatement(classMap,
                     raise Exception('you must input index integer for list. not String')
 
                 if localStore is None: 
-                    print(invert)
-                    print(statement)
-                    print(envObjName)
-                    print(nameOfList)
                     result = getAssignmentResult(
                             statement[1],
                             invert,
@@ -628,18 +630,33 @@ def evalStatement(classMap,
             s1 = statement[2]
             s2 = statement[3]
 
-        result_e1 = evalExp(globalStore, e1)
+        if localStore is None: 
+            result_e1 = evalExp(globalStore[envObjName], e1)
+        else:
+            result_e1 = evalExp(localStore[envObjName], e1)
 
         if not result_e1:
+            # assertion
             raise Exception("Loop initial Condition is False")
 
         # initially, e1 is true.
         while result_e1:  # e1  e2
 
             for s in s1:  # s1  s1
-                pass
+                evalStatement(classMap, 
+                              s, 
+                              globalStore, 
+                              envObjName, 
+                              thisType,
+                              invert, 
+                              localStore)
 
-            if evalExp(globalStore, e2):  # e2 e1
+            if localStore is None: 
+                result_e2 = evalExp(globalStore[envObjName], e2)
+            else:
+                result_e2 = evalExp(localStore[envObjName], e2)
+
+            if result_e2:  # e2 e1
                 break
             else:
                 if invert:
@@ -647,10 +664,17 @@ def evalStatement(classMap,
                         pass
                 else:
                     for s in s2:
-                        pass
-
-            # after 1st loop, e1 is false.
-            result_e1 = not evalExp(globalStore, e1)
+                        evalStatement(classMap, 
+                              s, 
+                              globalStore, 
+                              envObjName, 
+                              thisType,
+                              invert, 
+                              localStore)
+            if localStore is None: 
+                result_e1 = evalExp(globalStore[envObjName], e1)
+            else:
+                result_e1 = evalExp(localStore[envObjName], e1)
 
             if not result_e1:
                 if invert:
