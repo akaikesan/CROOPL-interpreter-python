@@ -1,0 +1,14 @@
+class Program
+    int x
+
+    method main()
+        call odoloop()
+        
+
+    method odoloop()
+        if x = 0 then
+            x += 1
+            x += 2
+        else
+           skip
+        fi x = 3

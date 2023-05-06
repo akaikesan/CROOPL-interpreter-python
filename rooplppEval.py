@@ -592,6 +592,8 @@ def evalStatement(classMap,
 
     elif (statement[0] == 'if'):  # statement[1:4] = [e1, s1, s2, e2]
         if invert:
+            # e2=false -> s2 -> e1 = false
+            # e2=true -> s1 -> e1 = true 
             e1 = statement[4]
             e2 = statement[1]
         else:
@@ -602,6 +604,7 @@ def evalStatement(classMap,
             result_e1 = evalExp(globalStore[envObjName], e1)
         else:
             result_e1 = evalExp(localStore[envObjName], e1)
+
         if result_e1:
             if invert:
                 statements = reversed(statement[2])
@@ -627,7 +630,7 @@ def evalStatement(classMap,
         else:
             result_e2 = evalExp(localStore[envObjName], e2)
 
-        if result_e2:  # e2 e1
+        if result_e2 == result_e1:  # e2 e1
             return
         else:
             if invert:
