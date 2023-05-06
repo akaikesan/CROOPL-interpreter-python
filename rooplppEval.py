@@ -598,8 +598,11 @@ def evalStatement(classMap,
             e1 = statement[1]
             e2 = statement[4]
 
-        e1 = evalExp(globalStore, e1)
-        if e1:
+        if localStore is None: 
+            result_e1 = evalExp(globalStore[envObjName], e1)
+        else:
+            result_e1 = evalExp(localStore[envObjName], e1)
+        if result_e1:
             if invert:
                 statements = reversed(statement[2])
             else:
@@ -611,7 +614,27 @@ def evalStatement(classMap,
                 statements = statement[3]
 
         for s in statements:
-            pass
+            evalStatement(classMap, 
+                          s, 
+                          globalStore, 
+                          envObjName, 
+                          thisType,
+                          invert, 
+                          localStore)
+
+        if localStore is None: 
+            result_e2 = evalExp(globalStore[envObjName], e2)
+        else:
+            result_e2 = evalExp(localStore[envObjName], e2)
+
+        if result_e2:  # e2 e1
+            return
+        else:
+            if invert:
+                raise Exception("INVERTED: e1 is False")
+            else:
+                raise Exception("e2 is False")
+
 
     elif (statement[0] == 'from'):  # statement[1:4] = [e1, s1, s2, e2]
         if invert:
@@ -630,6 +653,8 @@ def evalStatement(classMap,
         else:
             result_e1 = evalExp(localStore[envObjName], e1)
 
+        print(result_e1)
+
         if not result_e1:
             # assertion
             raise Exception("Loop initial Condition is False")
@@ -637,7 +662,6 @@ def evalStatement(classMap,
         # initially, e1 is true.
         # e1 -> s1 -> e2 -> s2 -> e1
         while result_e1:  # e1  e2
-            print('loop')
 
             for s in s1:  # s1  s1
                 evalStatement(classMap, 
@@ -657,17 +681,20 @@ def evalStatement(classMap,
                 break
             else:
                 if invert:
-                    for s in reversed(s2):
-                        pass
+                    stmts = reversed(s2)
                 else:
-                    for s in s2:
-                        evalStatement(classMap, 
-                              s, 
-                              globalStore, 
-                              envObjName, 
-                              thisType,
-                              invert, 
-                              localStore)
+                    stmts = s2
+
+                for s in reversed(s2):
+                    evalStatement(classMap, 
+                          s, 
+                          globalStore, 
+                          envObjName, 
+                          thisType,
+                          invert, 
+                          localStore)
+
+
             if localStore is None: 
                 result_e1 = evalExp(globalStore[envObjName], e1)
             else:
@@ -681,6 +708,7 @@ def evalStatement(classMap,
 
             if not result_e1:
                 if invert:
+                    print(e1)
                     raise Exception(
                         "INVERTED : Loop initial Condition is True")
                 else:
