@@ -353,7 +353,7 @@ def yacc_test():
     q = globalStore[varName]['#q']
 
     # request process to run main func
-    q.put(["main", [], "call"])
+    q.put(["main", [], "call", "originProcess"])
 
     while(1):
         time.sleep(2)

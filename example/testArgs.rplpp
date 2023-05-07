@@ -1,32 +1,28 @@
+
 class Program
-    int x
-    int y
-    int z
+    Fib f
     Fib g
+    int y
 
     method main()
-        call odoloop()
-        uncall odoloop()
-        
+        x += 1
+        call loc()
 
-    method odoloop()
-      local Fib f = nil
-          new Fib f
-          call f::initSeparate()
-          uncall f::initSeparate()
-          delete Fib f
-      delocal Fib f = nil
-
+    method loc()
+        new Fib g
+        call g::init(y)
 
 class Fib
     int[] xs
     Fib g
+    Fib f
     
-    method init()
+    method init(int x)
         new int[2] xs
 
     method initSeparate()
         new separate Fib g
+        new separate Fib f
     
     method minus()
         xs[1] -= 1 / 100 + 1

@@ -25,7 +25,8 @@ class Program
     method main()
         num += 144
         local Root r = nil
-    	new Root r
-    	call r::root(num, root)
-    	delete Root r
-    	delocal Root r = nil
+          new Root r
+          call r::root(num,
+                       root)
+          delete Root r
+        delocal Root r = nil

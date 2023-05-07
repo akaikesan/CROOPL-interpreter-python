@@ -26,6 +26,7 @@ def makeStore(classMap, className):
                 #          現在は無限再帰のpython側のエラーとなっている。
                 # st[f] = makeStore(classMap, classMap[className]['fields'][f])
                 st[f] = {}
+        st['type'] = className
 
     return st
 
@@ -34,6 +35,7 @@ def makeStore(classMap, className):
 
 
 def callOrUncall(invert, callUncall):
+    # callOrUncall is must be called when call separated object's method
     if callUncall == 'call':
         if invert:
             return 'uncall'
@@ -115,9 +117,7 @@ def makeSeparatedProcess(classMap,
 
 
 
-def checkVarIsSeparated(globalStore, varName, localStore):
-    if localStore != None:
-        return False
+def checkVarIsSeparated(globalStore, varName ):
     for v in globalStore.keys():
         if v == varName:
             return True
@@ -257,6 +257,7 @@ def evalStatement(classMap,
                   envObjName,
                   thisType,
                   invert,
+                  storePath,
                   localStore = None):
 
 
@@ -367,7 +368,6 @@ def evalStatement(classMap,
 
                         checkObjIsDeletable(globalStore[topLevelName].keys(),
                                             globalStore[topLevelName])
-
                         ProcDict[topLevelName].terminate()
 
                         globalStore.pop(topLevelName)
@@ -583,34 +583,103 @@ def evalStatement(classMap,
 
         if len(statement) == 4:  # call method of object
 
-            callerType = classMap[thisType]['fields'][statement[1]]
+            if localStore == None:
+                if isinstance(globalStore[envObjName][statement[1]], str):
+                    callerType = globalStore[globalStore[envObjName][statement[1]]]['type']
+                else:
+                    callerType = globalStore[envObjName][statement[1]]['type']
+            else:
+                if isinstance(localStore[envObjName][statement[1]], str):
+                    callerType = globalStore[localStore[envObjName][statement[1]]]['type']
+                else:
+                    callerType = localStore[envObjName][statement[1]]['type']
+
             callMethodInfo = classMap[callerType]['methods'][statement[2]]
             argsInfo = callMethodInfo["args"]
             callMethodName = statement[2]
             stmts = callMethodInfo["statements"]
+
+            PassedArgs = statement[3]
+
+            if (len(PassedArgs) != len(argsInfo)):
+                raise Exception('args does not match')
+            
+
 
             if localStore == None:
                 callerObjGlobalName = globalStore[envObjName][statement[1]]
             else:
                 callerObjGlobalName = localStore[envObjName][statement[1]]
 
+            if statement[1] == 'g':
+                print('hello')
+                print(localStore)
+                print(callerObjGlobalName)
+
 
             if isinstance(callerObjGlobalName, str):
-                callerIsSeparated = checkVarIsSeparated(globalStore, callerObjGlobalName, localStore) 
+                callerIsSeparated = checkVarIsSeparated(globalStore, callerObjGlobalName) 
             else:
                 callerIsSeparated = False
 
-            args = statement[3]
 
+            """
+            if len(PassedArgs) == 0:
+                haveAttachedArg = False
+            else:
+                haveAttachedArg = True 
+            """
             haveAttachedArg = True 
+
 
             for i, a in enumerate(argsInfo):
                 # ex) args =  [{'name': 'a', 'type': 'int'}, {'name': 'b', 'type': 'int'}]
+
+                if localStore == None:
+                    if callerIsSeparated:
+
+                        separatedObjName = globalStore[envObjName][statement[1]]
+
+                        if a['name'] in globalStore[separatedObjName].keys():
+                            raise Exception('arg name is already defined')
+
+                        updateGlobalStore(globalStore,
+                                          separatedObjName, 
+                                          a['name'], 
+                                          globalStore[envObjName][PassedArgs[i]])
+                    else:
+                        if a['name'] in globalStore[envObjName][statement[1]].keys():
+                            raise Exception('arg name is already defined')
+
+                        tmp = globalStore[envObjName]
+                        tmp[statement[1]][a['name']] = globalStore[envObjName][PassedArgs[i]]
+                        globalStore[envObjName] = tmp
+
+                        
+
+                else:
+                    if callerIsSeparated:
+
+                        separatedObjName = localStore[envObjName][statement[1]]
+
+                        if a['name'] in globalStore[separatedObjName].keys():
+                            raise Exception('arg name is already defined')
+
+                        globalStore[separatedObjName][a['name']] = localStore[envObjName][PassedArgs[i]]
+                    else:
+                        if a['name'] in localStore[envObjName][statement[1]].keys():
+                            raise Exception('arg name is already defined')
+
+                        localStore[envObjName][statement[1]][a['name']] = localStore[envObjName][PassedArgs[i]]
+
+                        
+    
+
                 if type(a['type']) is list and  a['type'][1] == 'detachable':
-                    haveAttachedArg= False 
-                    break
+                    haveAttachedArg = False 
 
             if callerIsSeparated: 
+                print(statement)
 
                 # you are calling method of separated object
                 # push to Queue, return.
@@ -620,59 +689,64 @@ def evalStatement(classMap,
 
                 callUncall = callOrUncall(invert, statement[0])
 
+                storePathToPass = storePath + '/' + statement[1]
+
                 if haveAttachedArg:
                     parent_conn, child_conn = mp.Pipe()
                     q.put([statement[2], statement[3], callUncall,
-                           child_conn])
+                           child_conn, storePathToPass])
                     parent_conn.recv()
                     print('received')
-                    return
                 else:
-                    print('hello')
-                    q.put([statement[2], statement[3], callUncall])
-                    return
-
-            try:  # when caller is field
-                pass
-            except:  # when caller is arg or local
-                pass
-
-
-
-
-            if  localStore == None:
-                # top-level CALL
-                tmp = globalStore[envObjName]
-            elif localStore != None:
-                # nested Objects CALL
-                tmp = localStore[envObjName]
+                    print('detachable')
+                    q.put([statement[2], statement[3], callUncall, storePathToPass])
             else:
-                raise Exception(
-                        "call error: caller not separated and localStore is None"
-                        )
 
-            if statement[0] == 'uncall':
-                invert = not invert 
+                print(statement)
+                # not-separated object's method call. 
 
-            if invert:
-                stmts = reversed(stmts)
+                try:  # when caller is field
+                    pass
+                except:  # when caller is arg or local
+                    pass
 
-            for stmt in stmts:
-                evalStatement(classMap,
-                              stmt,
-                              globalStore, 
-                              statement[1],
-                              thisType, 
-                              invert,
-                              tmp)
 
-            if statement[0] == 'uncall':
-                #end of uncall
-                invert = not invert 
 
-            if localStore == None :
-                # update globalStore if this is top-level CALL
-                globalStore[envObjName] = tmp
+
+                if  localStore == None:
+                    # top-level CALL
+                    tmp = globalStore[envObjName]
+                elif localStore != None:
+                    # nested Objects CALL
+                    tmp = localStore[envObjName]
+                else:
+                    raise Exception("call error: caller not separated and localStore is None")
+
+                if statement[0] == 'uncall':
+                    invert = not invert 
+
+                if invert:
+                    stmts = reversed(stmts)
+
+                storePathToPass = storePath + '/' + statement[1]
+
+                for stmt in stmts:
+                    evalStatement(classMap,
+                                  stmt,
+                                  globalStore, 
+                                  statement[1],
+                                  thisType, 
+                                  invert,
+                                  storePathToPass,
+                                  tmp)
+
+                if statement[0] == 'uncall':
+                    #end of uncall
+                    invert = not invert 
+
+                if localStore == None :
+                    # update globalStore if this is top-level CALL
+                    globalStore[envObjName] = tmp
 
                 
 
@@ -697,7 +771,7 @@ def evalStatement(classMap,
             if invert:
                 stmts = reversed(stmts)
             for stmt in stmts:
-                evalStatement(classMap, stmt, globalStore, envObjName, thisType, invert)
+                evalStatement(classMap, stmt, globalStore, envObjName, thisType, invert, storePath, None)
                 
             if statement[0] == 'uncall':
                 invert = not invert
@@ -739,6 +813,7 @@ def evalStatement(classMap,
                           envObjName, 
                           thisType,
                           invert, 
+                          storePath,
                           localStore)
 
         if localStore is None: 
@@ -789,7 +864,8 @@ def evalStatement(classMap,
                               envObjName, 
                               thisType,
                               invert, 
-                              localStore)
+                              localStore,
+                              storePath)
 
             if localStore is None: 
                 result_e2 = evalExp(globalStore[envObjName], e2)
@@ -811,7 +887,8 @@ def evalStatement(classMap,
                           envObjName, 
                           thisType,
                           invert, 
-                          localStore)
+                          localStore,
+                          storePath)
 
 
             if localStore is None: 
@@ -874,7 +951,8 @@ def evalStatement(classMap,
                       envObjName, 
                       thisType,
                       invert, 
-                      localStore)
+                      localStore,
+                              storePath)
 
         if localStore is None: 
             result_id2_EQ_exp2 = evalExp(globalStore[envObjName],
@@ -889,8 +967,6 @@ def evalStatement(classMap,
             else:
                 raise Exception("delocal Error")
 
-        print('delocal')
-        print(globalStore)
         if localStore is None: 
             tmp = globalStore[envObjName]
             tmp.pop(id1)
@@ -919,6 +995,8 @@ def interpreter(classMap,
     global ProcessRefCounter 
     ProcessRefCounter = 0
 
+    storePath =  objName
+
     while(True):
         
         try:
@@ -936,30 +1014,38 @@ def interpreter(classMap,
             args = request[1]
             callORuncall = request[2]
 
+            if len(request) == 5:
 
-            if len(request) == 4:
+                callerReference = request[4]
+                print(callerReference)
                 # attached object's call
                 startStatement = [callORuncall,
                                   methodName,
                                   args ]
+                print(startStatement)
                 evalStatement(classMap,
                           startStatement,
                           globalStore,
                           objName,
                           className,
-                          invert)
+                          invert,
+                          storePath)
                 print('send')
                 request[3].send('signal')
 
             else:
                 # detachable object's call
+                callerReference = request[3]
+                print(callerReference)
                 startStatement = [callORuncall,
                                   methodName,
                                   args]
                                   
+                print(startStatement)
                 evalStatement(classMap,
                           startStatement,
                           globalStore,
                           objName,
                           className,
-                          invert)
+                          invert,
+                          storePath)
