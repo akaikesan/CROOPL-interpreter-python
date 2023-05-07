@@ -129,8 +129,9 @@ def checkVarIsSeparated(globalStore, varName, localStore):
 
 def checkObjIsDeletable(varList, env):
     env['type'] = 0
-    env['#q'] = 0
     for k in varList :
+        if k == '#q':
+           continue 
         if  not (env[k] == {} or env[k] == 0):
             raise Exception("you can invert-new only nil-initialized object")
 
@@ -209,6 +210,8 @@ def evalExp(thisStore, exp):
 
         elif (exp[1] == '/'):
             return int(evalExp(thisStore, exp[0]) / evalExp(thisStore, exp[2]))
+        elif (exp[1] == '*'):
+            return int(evalExp(thisStore, exp[0]) * evalExp(thisStore, exp[2]))
         elif (exp[1] == '='):
 
             e1 = checkNil(evalExp(thisStore, exp[0]))
@@ -255,6 +258,10 @@ def evalStatement(classMap,
                   thisType,
                   invert,
                   localStore = None):
+
+
+    global ProcessRefCounter
+    global ProcessObjName
 
     if statement is None:
         return
@@ -360,6 +367,7 @@ def evalStatement(classMap,
 
                         checkObjIsDeletable(globalStore[topLevelName].keys(),
                                             globalStore[topLevelName])
+
                         ProcDict[topLevelName].terminate()
 
                         globalStore.pop(topLevelName)
@@ -409,8 +417,6 @@ def evalStatement(classMap,
                     # ['new', className, [varName], 'separate']
 
 
-                    global ProcessRefCounter
-                    global ProcessObjName
 
                     if ProcessRefCounter == None:
                         raise Exception("ProcessRefCounter is None")
@@ -450,10 +456,120 @@ def evalStatement(classMap,
 
 
     elif (statement[0] == 'delete'):
+
         if invert:
-            pass
+            # new(inverted delete) 
+            if isinstance(statement[1], list): 
+                # new list
+                if localStore == None:
+                    updateGlobalStore(globalStore, envObjName, statement[2][0], makeStore(classMap, statement[1]))
+                else:
+                    localStore[envObjName][statement[2][0]] = makeStore(classMap, statement[1])
+            else: 
+                # new object
+                if len(statement) == 4: 
+                    # ['new', className, [varName], 'separate']
+
+
+
+                    if ProcessRefCounter == None:
+                        raise Exception("ProcessRefCounter is None")
+                    if ProcessObjName == None:
+                        raise Exception("ProcessObjName is None")
+                    ProcessRefCounter += 1
+
+                    varName = ProcessObjName + ':' + str(ProcessRefCounter) + '_' + statement[2][0]
+
+                    if localStore == None:
+                        updateGlobalStore(globalStore,
+                                          envObjName,
+                                          statement[2][0],
+                                          varName)
+                    else:
+                        localStore[envObjName][statement[2][0]] = varName
+
+                    global p
+
+
+                    makeSeparatedProcess(classMap,
+                                         statement[1],
+                                         varName,
+                                         globalStore)
+
+
+                else:
+                    # new type varName
+                    if localStore == None:
+                        updateGlobalStore(globalStore,
+                                          envObjName,
+                                          statement[2][0],
+                                          makeStore(classMap, statement[1])
+                                          )
+                    else:
+                        localStore[envObjName][statement[2][0]] = makeStore(classMap, statement[1])
+
         else:
-            pass
+            # delete (inverted new)
+            if isinstance(statement[1], list): 
+                # delete list
+                if localStore is None:
+                    checkListIsDeletable(globalStore[envObjName][statement[2][0]])
+                    updateGlobalStore(globalStore,
+                                      envObjName,
+                                      statement[2][0],
+                                      {}
+                                      )
+                else:
+                    checkListIsDeletable(localStore[envObjName][statement[2][0]])
+                    localStore[envObjName][statement[2][0]] = {}
+
+            else: 
+                # delete object (not list).
+                if localStore is None: 
+                    # global Scope
+
+                    if len(statement) == 4:
+                        # delete separate
+
+                        topLevelName = globalStore[envObjName][statement[2][0]]
+
+                        checkObjIsDeletable(globalStore[topLevelName].keys(),
+                                            globalStore[topLevelName])
+                        ProcDict[topLevelName].terminate()
+
+                        globalStore.pop(topLevelName)
+                        updateGlobalStore(globalStore,
+                                          envObjName,
+                                          statement[2][0],
+                                          {}
+                                          )
+
+                    else:
+                        # delete object (not separated)
+                        checkObjIsDeletable(globalStore[envObjName][statement[2][0]].keys(),
+                                            globalStore[envObjName][statement[2][0]])
+                        updateGlobalStore(globalStore, envObjName, statement[2][0], {})
+
+                else:
+                    # local Scope
+                    if len(statement) == 4:
+
+                        # delete separate
+                        topLevelName = localStore[envObjName][statement[2][0]]
+
+                        checkObjIsDeletable(globalStore[topLevelName].keys(),
+                                            globalStore[topLevelName])
+                        ProcDict[topLevelName].terminate()
+
+                        globalStore.pop(topLevelName)
+                        localStore[envObjName][statement[2][0]] = {}
+
+                    else:
+                        # delete object (not separated)
+                        checkObjIsDeletable(localStore[envObjName][statement[2][0]].keys(),
+                                            localStore[envObjName][statement[2][0]])
+                        localStore[envObjName][statement[2][0]] = {}
+
     elif (statement[0] == 'copy'):
         if invert:
             pass
@@ -732,18 +848,56 @@ def evalStatement(classMap,
             exp1 = statement[3]
             exp2 = statement[7]
             stmts = statement[4]
-        if statement[1] != 'int':
-            pass
+
+        if localStore is None: 
+             if id1 in globalStore[envObjName].keys():
+                 raise Exception('local variable is already defined')
+
+             updateGlobalStore(globalStore, 
+                               envObjName, 
+                               id1, 
+                               evalExp(globalStore[envObjName], exp1))
+        else:
+            if id1 in localStore[envObjName].keys():
+                 raise Exception('local variable is already defined')
+
+            localStore[envObjName][id1] = evalExp(localStore[envObjName], exp1)
+
+        if statement[1] != 'int' and statement[3][0] != 'nil':
+            raise Exception('local initiation is not int or nil')
 
         for s in stmts:
-            pass
 
-        try:
-            pass
-        except:
-            pass
+                evalStatement(classMap, 
+                      s, 
+                      globalStore, 
+                      envObjName, 
+                      thisType,
+                      invert, 
+                      localStore)
 
-            #raise Exception("delocal Error")
+        if localStore is None: 
+            result_id2_EQ_exp2 = evalExp(globalStore[envObjName],
+                                         [[id2],'=', exp2])
+        else:
+            result_id2_EQ_exp2 = evalExp(localStore[envObjName],
+                                         [[id2],'=', exp2])
+
+        if not result_id2_EQ_exp2:
+            if invert:
+                raise Exception("INVERTED: delocal Error")
+            else:
+                raise Exception("delocal Error")
+
+        print('delocal')
+        print(globalStore)
+        if localStore is None: 
+            tmp = globalStore[envObjName]
+            tmp.pop(id1)
+            globalStore[envObjName] = tmp
+        else:
+            localStore[envObjName].pop(id1)
+
 
 
 
