@@ -4,6 +4,21 @@ import time
 
 # Storeはfオブジェクトを使いたい場合、{, f:{}, ...} の形でevalStatementに渡す。
 
+def dparse(dic, p, result, sep="/", default=None):
+    lis = p.split(sep)
+    def _(dic, lis, result, sep, default):
+        if len(lis) == 0:
+            return 
+        if len(lis) == 1:
+            for k in result.keys():
+                dic[lis[0]][k] = result[k]
+        else:
+            _(dic.get(lis[0], {}), lis[1:], result ,sep, default)
+    _(dic, lis, result, sep=sep, default=None)
+    return dic
+
+
+
 
 def makeStore(classMap, className):
 
@@ -274,9 +289,15 @@ def evalStatement(classMap,
             if (statement[1] == '<=>'):
                 if isinstance(statement[3][0], list):
                     # if list Elem will be assigned to list
-                    pass
+                    if localStore == None:
+                        pass
+                    else:
+                        pass
                 else:
-                    pass
+                    if localStore == None:
+                        pass
+                    else:
+                        pass
             else:
 
                 nameOfList = statement[2][0][0]
@@ -601,6 +622,9 @@ def evalStatement(classMap,
 
             PassedArgs = statement[3]
 
+            print('PassedArgs')
+            print(PassedArgs)
+
             if (len(PassedArgs) != len(argsInfo)):
                 raise Exception('args does not match')
             
@@ -610,11 +634,6 @@ def evalStatement(classMap,
                 callerObjGlobalName = globalStore[envObjName][statement[1]]
             else:
                 callerObjGlobalName = localStore[envObjName][statement[1]]
-
-            if statement[1] == 'g':
-                print('hello')
-                print(localStore)
-                print(callerObjGlobalName)
 
 
             if isinstance(callerObjGlobalName, str):
@@ -679,7 +698,6 @@ def evalStatement(classMap,
                     haveAttachedArg = False 
 
             if callerIsSeparated: 
-                print(statement)
 
                 # you are calling method of separated object
                 # push to Queue, return.
@@ -701,7 +719,6 @@ def evalStatement(classMap,
                     print('detachable')
                     q.put([statement[2], statement[3], callUncall, storePathToPass])
             else:
-
                 print(statement)
                 # not-separated object's method call. 
 
@@ -750,6 +767,19 @@ def evalStatement(classMap,
 
                 
 
+                for i, k in enumerate(PassedArgs):
+                    if localStore == None:
+                        tmp = globalStore[envObjName]
+                        if k in globalStore[envObjName].keys():
+                             tmp[k] = globalStore[envObjName][statement[1]][argsInfo['name']]
+
+                        globalStore[envObjName] = tmp  
+                    else:
+                        if k in localStore[envObjName].keys():
+
+                           localStore[envObjName][k] = localStore[envObjName][statement[1]][argsInfo['name']]
+
+
 
                 
 
@@ -775,6 +805,7 @@ def evalStatement(classMap,
                 
             if statement[0] == 'uncall':
                 invert = not invert
+
 
                 
 
@@ -1018,10 +1049,16 @@ def interpreter(classMap,
 
                 callerReference = request[4]
                 print(callerReference)
+                l = callerReference.split('/')
+                callerObjName = l[0]
+                x = '/'.join(l[:-1])
+
+
                 # attached object's call
                 startStatement = [callORuncall,
                                   methodName,
-                                  args ]
+                                  args]
+                print(args)
                 print(startStatement)
                 evalStatement(classMap,
                           startStatement,
@@ -1030,12 +1067,29 @@ def interpreter(classMap,
                           className,
                           invert,
                           storePath)
+                argsInfo = classMap[className]['methods'][methodName]['args']
+
+
+                tmpCaller = globalStore[callerObjName]
+                tmpCaller = { callerObjName : tmpCaller}
+
+                tmpThis = globalStore[objName]
+                result = {} 
+
+                for i, a in enumerate(argsInfo):
+                    result[args[i]] = globalStore[objName][a['name']]
+                    tmpThis.pop(a['name'])
+
+                globalStore[objName] = tmpThis
+                globalStore[callerObjName] = dparse(tmpCaller, x, result)[callerObjName]
                 print('send')
                 request[3].send('signal')
 
             else:
                 # detachable object's call
+                print('hello')
                 callerReference = request[3]
+                print(args)
                 print(callerReference)
                 startStatement = [callORuncall,
                                   methodName,

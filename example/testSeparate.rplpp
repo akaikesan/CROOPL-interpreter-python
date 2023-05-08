@@ -7,11 +7,6 @@ class Program
         call f::init()
         call f::initSeparate()
         call f::fib()
-        uncall f::fib()
-
-        uncall f::initSeparate()
-        uncall f::init()
-        delete separate Fib f
 
 
 class Fib
