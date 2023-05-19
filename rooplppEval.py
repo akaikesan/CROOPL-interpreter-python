@@ -237,11 +237,19 @@ def evalExp(thisStore, exp):
             e1 = checkNil(evalExp(thisStore, exp[0]))
             e2 = checkNil(evalExp(thisStore, exp[2]))
             return e1 != e2
+
+        elif (exp[1] == '%'):
+            return evalExp(thisStore, exp[0]) % evalExp(thisStore, exp[2])
         elif (exp[1] == '&'):
             return evalExp(thisStore, exp[0]) and evalExp(thisStore, exp[2])
         elif (exp[1] == '>'):
             return evalExp(thisStore, exp[0]) > evalExp(thisStore, exp[2])
+        elif (exp[1] == '<='):
+            return evalExp(thisStore, exp[0]) <= evalExp(thisStore, exp[2])
+        elif (exp[1] == '>='):
+            return evalExp(thisStore, exp[0]) >= evalExp(thisStore, exp[2])
         elif (exp[1] == '<'):
+
             return evalExp(thisStore, exp[0]) < evalExp(thisStore, exp[2])
 
 
@@ -340,10 +348,17 @@ def evalStatement(classMap,
 
             else:
                 # +=, -=, ^=, !=, &=  etc...
-                result = getAssignmentResult(statement[1],
+                if localStore is None: 
+                    result = getAssignmentResult(statement[1],
                                              invert,
                                              globalStore[envObjName][statement[2][0]],
                                              evalExp(globalStore[envObjName], statement[3])
+                                             )
+                else:
+                    result = getAssignmentResult(statement[1],
+                                             invert,
+                                             localStore[envObjName][statement[2][0]],
+                                             evalExp(localStore[envObjName], statement[3])
                                              )
                 if localStore is None: 
                     updateGlobalStore(globalStore, 
@@ -352,7 +367,10 @@ def evalStatement(classMap,
                                       result
                                       )
                 else:
-                    localStore[statement[2][0]] = result
+                    # TODO!!!!
+                    # debug this
+                    # i think this is right.
+                    localStore[envObjName][statement[2][0]] = result
 
     elif (statement[0] == 'print'):
         pass
@@ -622,8 +640,6 @@ def evalStatement(classMap,
 
             PassedArgs = statement[3]
 
-            print('PassedArgs')
-            print(PassedArgs)
 
             if (len(PassedArgs) != len(argsInfo)):
                 raise Exception('args does not match')
@@ -719,7 +735,6 @@ def evalStatement(classMap,
                     print('detachable')
                     q.put([statement[2], statement[3], callUncall, storePathToPass])
             else:
-                print(statement)
                 # not-separated object's method call. 
 
                 try:  # when caller is field
@@ -752,10 +767,11 @@ def evalStatement(classMap,
                                   stmt,
                                   globalStore, 
                                   statement[1],
-                                  thisType, 
+                                  callerType, 
                                   invert,
                                   storePathToPass,
                                   tmp)
+
 
                 if statement[0] == 'uncall':
                     #end of uncall
@@ -767,11 +783,13 @@ def evalStatement(classMap,
 
                 
 
+
                 for i, k in enumerate(PassedArgs):
                     if localStore == None:
+                        print(argsInfo)
                         tmp = globalStore[envObjName]
                         if k in globalStore[envObjName].keys():
-                             tmp[k] = globalStore[envObjName][statement[1]][argsInfo['name']]
+                             tmp[k] = globalStore[envObjName][statement[1]][argsInfo[i]['name']]
 
                         globalStore[envObjName] = tmp  
                     else:
@@ -800,8 +818,9 @@ def evalStatement(classMap,
 
             if invert:
                 stmts = reversed(stmts)
+
             for stmt in stmts:
-                evalStatement(classMap, stmt, globalStore, envObjName, thisType, invert, storePath, None)
+                evalStatement(classMap, stmt, globalStore, envObjName, thisType, invert, storePath, localStore)
                 
             if statement[0] == 'uncall':
                 invert = not invert
@@ -878,7 +897,6 @@ def evalStatement(classMap,
         else:
             result_e1 = evalExp(localStore[envObjName], e1)
 
-        print(result_e1)
 
         if not result_e1:
             # assertion
@@ -895,8 +913,8 @@ def evalStatement(classMap,
                               envObjName, 
                               thisType,
                               invert, 
-                              localStore,
-                              storePath)
+                              storePath,
+                              localStore)
 
             if localStore is None: 
                 result_e2 = evalExp(globalStore[envObjName], e2)
@@ -918,8 +936,8 @@ def evalStatement(classMap,
                           envObjName, 
                           thisType,
                           invert, 
-                          localStore,
-                          storePath)
+                          storePath,
+                          localStore)
 
 
             if localStore is None: 
@@ -935,7 +953,6 @@ def evalStatement(classMap,
 
             if not result_e1:
                 if invert:
-                    print(e1)
                     raise Exception(
                         "INVERTED : Loop initial Condition is True")
                 else:
@@ -974,6 +991,7 @@ def evalStatement(classMap,
         if statement[1] != 'int' and statement[3][0] != 'nil':
             raise Exception('local initiation is not int or nil')
 
+
         for s in stmts:
 
                 evalStatement(classMap, 
@@ -982,8 +1000,8 @@ def evalStatement(classMap,
                       envObjName, 
                       thisType,
                       invert, 
-                      localStore,
-                              storePath)
+                      storePath,
+                      localStore)
 
         if localStore is None: 
             result_id2_EQ_exp2 = evalExp(globalStore[envObjName],
@@ -1048,7 +1066,6 @@ def interpreter(classMap,
             if len(request) == 5:
 
                 callerReference = request[4]
-                print(callerReference)
                 l = callerReference.split('/')
                 callerObjName = l[0]
                 x = '/'.join(l[:-1])
@@ -1058,8 +1075,6 @@ def interpreter(classMap,
                 startStatement = [callORuncall,
                                   methodName,
                                   args]
-                print(args)
-                print(startStatement)
                 evalStatement(classMap,
                           startStatement,
                           globalStore,
@@ -1087,15 +1102,11 @@ def interpreter(classMap,
 
             else:
                 # detachable object's call
-                print('hello')
                 callerReference = request[3]
-                print(args)
-                print(callerReference)
                 startStatement = [callORuncall,
                                   methodName,
                                   args]
                                   
-                print(startStatement)
                 evalStatement(classMap,
                           startStatement,
                           globalStore,

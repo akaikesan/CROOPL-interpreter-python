@@ -296,7 +296,10 @@ def p_exp(p):
     | exp NEQ exp
     | exp AND exp
     | exp GT exp
+    | exp GEQ exp
     | exp LT exp
+    | exp LEQ exp
+    | exp MOD exp
     | LPAREN exp RPAREN
     '''
 
@@ -323,6 +326,10 @@ def p_exp(p):
             p[0] = [p[1], ">", p[3]]
         elif p[2] == '<':
             p[0] = [p[1], "<", p[3]]
+        elif p[2] == '<=':
+            p[0] = [p[1], "<=", p[3]]
+        elif p[2] == '>=':
+            p[0] = [p[1], ">=", p[3]]
         elif p[1] == '(':
             p[0] = p[2]
 

@@ -11,9 +11,9 @@ tokens = (
     'ADD',
     'SUB',
     'LT',
-    'LE',
+    'LEQ',
     'GT',
-    'GE',
+    'GEQ',
     'EQ',
     'NEQ',
     'NE',
@@ -202,7 +202,9 @@ t_COLON = ':'
 t_WCOLON = '::'
 t_ADD = r'\+'
 t_GT= r'>'
-t_LT= r'>'
+t_LT= r'<'
+t_GEQ= r'>='
+t_LEQ= r'<='
 t_MODADD = r'\+='
 t_MODSUB = r'-='
 t_MODXOR = r'\^='
@@ -211,6 +213,7 @@ t_EQ = r'='
 t_NEQ = r'!='
 t_SUB = r'-'
 t_AND = r'&'
+t_MOD = r'%'
 t_MUL = r'\*'
 t_DIV = r'/'
 t_LPAREN = r'\('
