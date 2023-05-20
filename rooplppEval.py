@@ -374,7 +374,13 @@ def evalStatement(classMap,
                     localStore[envObjName][statement[2][0]] = result
 
     elif (statement[0] == 'print'):
-        pass
+        if localStore == None:
+            output = evalExp(globalStore[envObjName],statement[1])
+        else:
+            output = evalExp(localStore[envObjName],statement[1])
+
+        print(output)
+
     elif (statement[0] == 'skip'):
         pass
     elif (statement[0] == 'new'):
@@ -586,7 +592,6 @@ def evalStatement(classMap,
 
                     else:
                         # delete object (not separated)
-                        print(globalStore)
                         if isinstance(globalStore[envObjName][statement[2][0]], str) :
                             raise Exception("you must use sparated-delete when you delete separated object")
                         checkObjIsDeletable(globalStore[envObjName][statement[2][0]].keys(),

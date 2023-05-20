@@ -31,3 +31,4 @@ class Program
           call r::root(num, root)
           delete separate Root r
         delocal Root r = nil
+        print root
