@@ -106,6 +106,7 @@ def makeSeparatedProcess(classMap,
                            globalStore)
 
     updateGlobalStore(globalStore, varName, '#q', q)
+    updateGlobalStore(globalStore, varName, 'type', ObjType)
     p = mp.Process(target = interpreter, 
                    args=(classMap,
                          ObjType,
@@ -585,6 +586,9 @@ def evalStatement(classMap,
 
                     else:
                         # delete object (not separated)
+                        print(globalStore)
+                        if isinstance(globalStore[envObjName][statement[2][0]], str) :
+                            raise Exception("you must use sparated-delete when you delete separated object")
                         checkObjIsDeletable(globalStore[envObjName][statement[2][0]].keys(),
                                             globalStore[envObjName][statement[2][0]])
                         updateGlobalStore(globalStore, envObjName, statement[2][0], {})
@@ -666,7 +670,8 @@ def evalStatement(classMap,
             """
             haveAttachedArg = True 
 
-
+            
+            # pass Arguments
             for i, a in enumerate(argsInfo):
                 # ex) args =  [{'name': 'a', 'type': 'int'}, {'name': 'b', 'type': 'int'}]
 
@@ -783,19 +788,22 @@ def evalStatement(classMap,
 
                 
 
-
+                
+                # reflect arguments to parent Object
                 for i, k in enumerate(PassedArgs):
                     if localStore == None:
-                        print(argsInfo)
                         tmp = globalStore[envObjName]
                         if k in globalStore[envObjName].keys():
                              tmp[k] = globalStore[envObjName][statement[1]][argsInfo[i]['name']]
+                             tmp[statement[1]].pop(
+                                     argsInfo[i]['name'])
 
                         globalStore[envObjName] = tmp  
                     else:
                         if k in localStore[envObjName].keys():
 
                            localStore[envObjName][k] = localStore[envObjName][statement[1]][argsInfo['name']]
+                           localStore[envObjName].pop(k)
 
 
 
