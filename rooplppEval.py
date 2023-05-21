@@ -366,8 +366,8 @@ def evalStatement(classMap,
                     else:
                         tmp = localStore[envObjName][statement[2][0]]
                         localStore[envObjName][
-                                statement[2][0]] = localStore[envObjName][statement[3][0]][int(statement[3][0][1][0])]
-                        localStore[envObjName][statement[3][0]][int(statement[3][0][1][0])] = tmp
+                                statement[2][0]] = localStore[envObjName][statement[3][0][0]][int(statement[3][0][1][0])]
+                        localStore[envObjName][statement[3][0][0]][int(statement[3][0][1][0])] = tmp
 
 
 

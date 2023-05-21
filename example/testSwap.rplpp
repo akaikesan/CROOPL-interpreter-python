@@ -16,4 +16,4 @@ class Fib
         xs[1] ^= 12
 
     method out(int output)
-        xs[1] <=> output
+        output <=> xs[1]
