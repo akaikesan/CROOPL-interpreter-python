@@ -298,13 +298,21 @@ def evalStatement(classMap,
             if (statement[1] == '<=>'):
                 if isinstance(statement[3][0], list):
                     # if list Elem will be assigned to list
+                    # list <=> list
                     if localStore == None:
-                        pass
+                        tmp = globalStore[envObjName][statement[2][0][0]][int(statement[2][0][1][0])]
+                        updateGlobalStore(globalStore, envObjName, statement[2][0],globalStore[envObjName][statement[3][0][0]][int(statement[3][0][1][0])])
+                        updateGlobalStore(globalStore, envObjName, statement[3][0],tmp)
                     else:
                         pass
+
                 else:
+                    # list <=> var
                     if localStore == None:
-                        pass
+                        print(statement)
+                        tmp = globalStore[envObjName][statement[2][0][0]][int(statement[2][0][1][0])]
+                        updateGlobalStore(globalStore, envObjName, statement[2][0], globalStore[envObjName][statement[3][0]])
+                        updateGlobalStore(globalStore, envObjName, statement[3][0],tmp)
                     else:
                         pass
             else:
@@ -340,11 +348,18 @@ def evalStatement(classMap,
 
             if (statement[1] == '<=>'):
                 # swap
+                # ['assignment', '<=>', left, right]
                 if isinstance(statement[3][0], list):
                     # if list Elem will be assigned to var
-                    pass
+                    if localStore == None:
+                        pass
+                    else:
+                        pass
                 else:
-                    pass
+                    if localStore == None:
+                        pass
+                    else:
+                        pass
 
 
             else:
