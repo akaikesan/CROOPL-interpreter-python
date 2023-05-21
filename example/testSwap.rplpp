@@ -1,20 +1,12 @@
 class Program
     int result
     Fib f
-    int[] ys
 
     method main()
         new Fib f
-        call init()
-        call swap()
-        print result
-
-    method init()
-        new int[2] ys
-        ys[1] ^= 12
-
-    method swap()
-        ys[1] <=> result
+        call f::init()
+        call f::out(result)
+        print(result)
 
 class Fib
     int[] xs
@@ -25,4 +17,3 @@ class Fib
 
     method out(int output)
         xs[1] <=> output
-    

@@ -4,7 +4,7 @@ import time
 
 # Storeはfオブジェクトを使いたい場合、{, f:{}, ...} の形でevalStatementに渡す。
 
-def dparse(dic, p, result, sep="/", default=None):
+def dparse(dic, p, result, sep="/"):
     lis = p.split(sep)
     def _(dic, lis, result, sep, default):
         if len(lis) == 0:
@@ -295,6 +295,7 @@ def evalStatement(classMap,
         # ex) x += 2+1 -> ['assignment', +=, x, 2+1] 
         if isinstance(statement[2][0], list):
             # if list Elem will be assigned
+            # list <=> ?
             if (statement[1] == '<=>'):
                 if isinstance(statement[3][0], list):
                     # if list Elem will be assigned to list
@@ -304,17 +305,23 @@ def evalStatement(classMap,
                         updateGlobalStore(globalStore, envObjName, statement[2][0],globalStore[envObjName][statement[3][0][0]][int(statement[3][0][1][0])])
                         updateGlobalStore(globalStore, envObjName, statement[3][0],tmp)
                     else:
-                        pass
+                        tmp = localStore[envObjName][statement[2][0][0]][int(statement[2][0][1][0])]
+                        localStore[envObjName][statement[2][0][0]][int(statement[2][0][1][0])] = localStore[envObjName][statement[3][0]][int(statement[3][0][1][0])]
+                        localStore[envObjName][statement[3][0]][int(statement[3][0][1][0])] = tmp
+
+
 
                 else:
                     # list <=> var
                     if localStore == None:
-                        print(statement)
                         tmp = globalStore[envObjName][statement[2][0][0]][int(statement[2][0][1][0])]
                         updateGlobalStore(globalStore, envObjName, statement[2][0], globalStore[envObjName][statement[3][0]])
                         updateGlobalStore(globalStore, envObjName, statement[3][0],tmp)
                     else:
-                        pass
+                        tmp = localStore[envObjName][statement[2][0][0]][int(statement[2][0][1][0])]
+                        localStore[envObjName][statement[2][0][0]][
+                                int(statement[2][0][1][0])] = localStore[envObjName][statement[3][0]]
+                        localStore[envObjName][statement[3][0]] = tmp
             else:
 
                 nameOfList = statement[2][0][0]
@@ -347,19 +354,33 @@ def evalStatement(classMap,
         else:
 
             if (statement[1] == '<=>'):
-                # swap
+                # var <=> ? 
                 # ['assignment', '<=>', left, right]
                 if isinstance(statement[3][0], list):
-                    # if list Elem will be assigned to var
+                    # if list Elem will be assigned to list
+                    # var <=> list
                     if localStore == None:
-                        pass
+                        tmp = globalStore[envObjName][statement[2][0]]
+                        updateGlobalStore(globalStore, envObjName, statement[2][0],globalStore[envObjName][statement[3][0][0]][int(statement[3][0][1][0])])
+                        updateGlobalStore(globalStore, envObjName, statement[3][0],tmp)
                     else:
-                        pass
+                        tmp = localStore[envObjName][statement[2][0]]
+                        localStore[envObjName][
+                                statement[2][0]] = localStore[envObjName][statement[3][0]][int(statement[3][0][1][0])]
+                        localStore[envObjName][statement[3][0]][int(statement[3][0][1][0])] = tmp
+
+
+
                 else:
+                    # var <=> var
                     if localStore == None:
-                        pass
+                        tmp = globalStore[envObjName][statement[2][0]]
+                        updateGlobalStore(globalStore, envObjName, statement[2][0], globalStore[envObjName][statement[3][0]])
+                        updateGlobalStore(globalStore, envObjName, statement[3][0],tmp)
                     else:
-                        pass
+                        tmp = localStore[envObjName][statement[2][0]]
+                        localStore[envObjName][statement[2][0]] = localStore[envObjName][statement[3][0]]
+                        localStore[envObjName][statement[3][0]] = tmp
 
 
             else:
@@ -810,8 +831,10 @@ def evalStatement(classMap,
 
                 
                 # reflect arguments to parent Object
+                # TODO: lock globalStore from here -------
                 for i, k in enumerate(PassedArgs):
                     if localStore == None:
+
                         tmp = globalStore[envObjName]
                         if k in globalStore[envObjName].keys():
                              tmp[k] = globalStore[envObjName][statement[1]][argsInfo[i]['name']]
@@ -825,6 +848,7 @@ def evalStatement(classMap,
                            localStore[envObjName][k] = localStore[envObjName][statement[1]][argsInfo['name']]
                            localStore[envObjName].pop(k)
 
+                # ----------- to here
 
 
                 
