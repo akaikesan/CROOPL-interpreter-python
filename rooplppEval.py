@@ -4,7 +4,7 @@ import time
 
 # Storeはfオブジェクトを使いたい場合、{, f:{}, ...} の形でevalStatementに渡す。
 
-def dparse(dic, p, result, sep="/"):
+def getDictByAddress(dic, p, result, sep="/"):
     lis = p.split(sep)
     def _(dic, lis, result, sep, default):
         if len(lis) == 0:
@@ -79,6 +79,7 @@ def addSeparatedObjToStore(classMap, className, varName, globalStore):
             newObj['type'] = className
             newObj[f] = {}
 
+    # put in globalStore directly
     globalStore[varName] = newObj 
 
 
@@ -283,6 +284,7 @@ def evalStatement(classMap,
                   invert,
                   storePath,
                   localStore = None):
+    print(localStore == None)
 
 
     global ProcessRefCounter
@@ -306,8 +308,8 @@ def evalStatement(classMap,
                         updateGlobalStore(globalStore, envObjName, statement[3][0],tmp)
                     else:
                         tmp = localStore[envObjName][statement[2][0][0]][int(statement[2][0][1][0])]
-                        localStore[envObjName][statement[2][0][0]][int(statement[2][0][1][0])] = localStore[envObjName][statement[3][0]][int(statement[3][0][1][0])]
-                        localStore[envObjName][statement[3][0]][int(statement[3][0][1][0])] = tmp
+                        localStore[envObjName][statement[2][0][0]][int(statement[2][0][1][0])] = localStore[envObjName][statement[3][0][0]][int(statement[3][0][1][0])]
+                        localStore[envObjName][statement[3][0][0]][int(statement[3][0][1][0])] = tmp
 
 
 
@@ -353,9 +355,9 @@ def evalStatement(classMap,
 
         else:
 
+            # ['assignment', '<=>', left, right]
             if (statement[1] == '<=>'):
                 # var <=> ? 
-                # ['assignment', '<=>', left, right]
                 if isinstance(statement[3][0], list):
                     # if list Elem will be assigned to list
                     # var <=> list
@@ -404,9 +406,6 @@ def evalStatement(classMap,
                                       result
                                       )
                 else:
-                    # TODO!!!!
-                    # debug this
-                    # i think this is right.
                     localStore[envObjName][statement[2][0]] = result
 
     elif (statement[0] == 'print'):
@@ -732,6 +731,7 @@ def evalStatement(classMap,
                         if a['name'] in globalStore[envObjName][statement[1]].keys():
                             raise Exception('arg name is already defined')
 
+                        # put in globalStore directly
                         tmp = globalStore[envObjName]
                         tmp[statement[1]][a['name']] = globalStore[envObjName][PassedArgs[i]]
                         globalStore[envObjName] = tmp
@@ -746,7 +746,10 @@ def evalStatement(classMap,
                         if a['name'] in globalStore[separatedObjName].keys():
                             raise Exception('arg name is already defined')
 
-                        globalStore[separatedObjName][a['name']] = localStore[envObjName][PassedArgs[i]]
+                        # put in globalStore directly
+                        tmp = globalStore[separatedObjName]
+                        tmp[statement[1]][a['name']] = localStore[envObjName][PassedArgs[i]]
+                        globalStore[separatedObjName] = tmp
                     else:
                         if a['name'] in localStore[envObjName][statement[1]].keys():
                             raise Exception('arg name is already defined')
@@ -825,6 +828,7 @@ def evalStatement(classMap,
 
                 if localStore == None :
                     # update globalStore if this is top-level CALL
+                    # put in globalStore directly
                     globalStore[envObjName] = tmp
 
                 
@@ -841,6 +845,7 @@ def evalStatement(classMap,
                              tmp[statement[1]].pop(
                                      argsInfo[i]['name'])
 
+                        # put in globalStore directly
                         globalStore[envObjName] = tmp  
                     else:
                         if k in localStore[envObjName].keys():
@@ -1069,6 +1074,7 @@ def evalStatement(classMap,
                 raise Exception("delocal Error")
 
         if localStore is None: 
+            # put in globalStore directly
             tmp = globalStore[envObjName]
             tmp.pop(id1)
             globalStore[envObjName] = tmp
@@ -1120,7 +1126,7 @@ def interpreter(classMap,
                 callerReference = request[4]
                 l = callerReference.split('/')
                 callerObjName = l[0]
-                x = '/'.join(l[:-1])
+                dictAddress = '/'.join(l[:-1])
 
 
                 # attached object's call
@@ -1146,9 +1152,9 @@ def interpreter(classMap,
                 for i, a in enumerate(argsInfo):
                     result[args[i]] = globalStore[objName][a['name']]
                     tmpThis.pop(a['name'])
-
+                # put in globalStore directly
                 globalStore[objName] = tmpThis
-                globalStore[callerObjName] = dparse(tmpCaller, x, result)[callerObjName]
+                globalStore[callerObjName] = getDictByAddress(tmpCaller, dictAddress, result)[callerObjName]
                 print('send')
                 request[3].send('signal')
 
