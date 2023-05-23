@@ -4,6 +4,7 @@ import time
 
 from rooplppLexer import tokens
 from rooplppEval import   makeSeparatedProcess
+from rooplppStoreLoop import makeSeparatedStore 
 
 classMap = {}
 
@@ -356,15 +357,16 @@ def yacc_test():
     varName = 'program'
     classMap[varType]['fields'][varName] = 'Program'
     makeSeparatedProcess(classMap, varType, varName, globalStore)
+    makeSeparatedStore(globalStore, m)
 
     q = globalStore[varName]['#q']
+
+
 
     # request process to run main func
     q.put(["main", [], "call", "originProcess"])
 
     while(1):
-        time.sleep(2)
-        print(globalStore)
         pass
 
 

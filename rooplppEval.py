@@ -55,13 +55,14 @@ def updateGlobalStoreByPath(globalStore, storePath, varName, value):
     l = storePath.split('/')
     callerObjName = l[0]
 
-
-
     # must be synchronized
     tmpCaller = globalStore[callerObjName]
     copyGlobalStore = { callerObjName : tmpCaller}
 
-    assignVarAndGetDictByAddress(copyGlobalStore, storePath, varName, value)
+    assignVarAndGetDictByAddress(copyGlobalStore, 
+                                 storePath, 
+                                 varName, 
+                                 value)
 
     globalStore[callerObjName] = copyGlobalStore[callerObjName]
 
