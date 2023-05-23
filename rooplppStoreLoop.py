@@ -35,7 +35,8 @@ def storeCycle(q, globalStore):
         if q.qsize() != 0:
             request = q.get()
 
-            if(len(request) == 4):
+            if(len(request) == 5):
+
                 if(request[0] == "update"):
                 #update
                     objName = request[1]
@@ -57,6 +58,7 @@ def storeCycle(q, globalStore):
 
                 if(request[0] == "updatePath"):
                     #updateByPath
+                    print("updateByPath")
                     storePath = request[1]
                     varName = request[2]
                     value = request[3]
@@ -74,21 +76,22 @@ def storeCycle(q, globalStore):
 
                     globalStore[callerObjName] = copyGlobalStore[callerObjName]
 
+                print('send')
+                request[4].send('signal')
 
             elif(len(request) == 3):
                 if(request[0] == "deletePath"):
                     storePath = request[1]
                     varName = request[2]
 
-        time.sleep(2)
-        print(globalStore)
+        time.sleep(0.1)
 
 def makeSeparatedStore( globalStore, m):
 
     print("making Store")
     q = m.Queue()
 
-    globalStore['#Store'] = {'#q': q}
+    globalStore['#Store'] = q
     p = mp.Process(target =  storeCycle, args = (q, globalStore))
 
     time.sleep(0.2)

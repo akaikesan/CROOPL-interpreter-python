@@ -55,7 +55,18 @@ def updateGlobalStoreByPath(globalStore, storePath, varName, value):
     l = storePath.split('/')
     callerObjName = l[0]
 
+    print('aye')
+    q = globalStore['#Store']
+
+    parent_conn, child_conn = mp.Pipe()
+    q.put(['updatePath', storePath, varName, value, child_conn])
+
+    parent_conn.recv()
+    print('store updated by path') 
+
+
     # must be synchronized
+    """
     tmpCaller = globalStore[callerObjName]
     copyGlobalStore = { callerObjName : tmpCaller}
 
@@ -65,6 +76,7 @@ def updateGlobalStoreByPath(globalStore, storePath, varName, value):
                                  value)
 
     globalStore[callerObjName] = copyGlobalStore[callerObjName]
+    """
 
 
 
@@ -261,6 +273,18 @@ def checkListIsDeletable(list):
 # https://stackoverflow.com/questions/26562287/value-update-in-manager-dict-not-reflected
 def updateGlobalStore(globalStore, objName, varName, value):
 
+
+    print('aye aye')
+    q = globalStore['#Store']
+
+    parent_conn, child_conn = mp.Pipe()
+    q.put(['update', objName, varName, value, child_conn])
+
+    parent_conn.recv()
+    print('store updated') 
+
+
+    """
     # must be synchronized
     if isinstance(varName, list):
         proxy = globalStore[objName]
@@ -274,6 +298,7 @@ def updateGlobalStore(globalStore, objName, varName, value):
         proxy = globalStore[objName]
         proxy[varName] = value
         globalStore[objName] = proxy
+    """
 
 
 

@@ -356,8 +356,8 @@ def yacc_test():
     varType = 'Program'
     varName = 'program'
     classMap[varType]['fields'][varName] = 'Program'
-    makeSeparatedProcess(classMap, varType, varName, globalStore)
     makeSeparatedStore(globalStore, m)
+    makeSeparatedProcess(classMap, varType, varName, globalStore)
 
     q = globalStore[varName]['#q']
 
@@ -367,6 +367,8 @@ def yacc_test():
     q.put(["main", [], "call", "originProcess"])
 
     while(1):
+        time.sleep(2)
+        print(globalStore)
         pass
 
 
