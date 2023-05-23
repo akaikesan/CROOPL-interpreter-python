@@ -52,10 +52,6 @@ def assignVarAndGetDictByAddress(dic, p, varName, value, sep="/"):
 
 def updateGlobalStoreByPath(globalStore, storePath, varName, value):
 
-    l = storePath.split('/')
-    callerObjName = l[0]
-
-    print('aye')
     q = globalStore['#Store']
 
     parent_conn, child_conn = mp.Pipe()
@@ -65,7 +61,6 @@ def updateGlobalStoreByPath(globalStore, storePath, varName, value):
     print('store updated by path') 
 
 
-    # must be synchronized
     """
     tmpCaller = globalStore[callerObjName]
     copyGlobalStore = { callerObjName : tmpCaller}
@@ -80,20 +75,28 @@ def updateGlobalStoreByPath(globalStore, storePath, varName, value):
 
 
 
+
 def deleteVarGlobalStoreByPath(globalStore, storePath, varName):
 
-    l = storePath.split('/')
-    callerObjName = l[0]
+    q = globalStore['#Store']
+
+    parent_conn, child_conn = mp.Pipe()
+    q.put(['deletePath', storePath, varName, child_conn])
+
+    parent_conn.recv()
+    print('store deleted by path') 
 
 
 
-    # must be synchronized
-    tmpCaller = globalStore[callerObjName]
-    copyGlobalStore = { callerObjName : tmpCaller}
+def deleteVarGlobalStore(globalStore, envObjName, id1):
 
-    popVarOfDict(copyGlobalStore, storePath, varName)
+    q = globalStore['#Store']
 
-    globalStore[callerObjName] = copyGlobalStore[callerObjName]
+    parent_conn, child_conn = mp.Pipe()
+    q.put(['delete', envObjName, id1, child_conn])
+
+    parent_conn.recv()
+    print('store deleted by path') 
 
 
 def getValueByPath(dic, p, varName, sep="/"):
@@ -186,7 +189,6 @@ def addSeparatedObjToStore(classMap, className, varName, globalStore):
             newObj['type'] = className
             newObj[f] = {}
 
-    # does not have to be synchronized
     globalStore[varName] = newObj 
 
 
@@ -274,7 +276,6 @@ def checkListIsDeletable(list):
 def updateGlobalStore(globalStore, objName, varName, value):
 
 
-    print('aye aye')
     q = globalStore['#Store']
 
     parent_conn, child_conn = mp.Pipe()
@@ -283,22 +284,6 @@ def updateGlobalStore(globalStore, objName, varName, value):
     parent_conn.recv()
     print('store updated') 
 
-
-    """
-    # must be synchronized
-    if isinstance(varName, list):
-        proxy = globalStore[objName]
-        try:
-            index = int(varName[1][0])
-        except:
-            raise Exception('List index must be int')
-        proxy[varName[0]][index] = value
-        globalStore[objName] = proxy
-    else:
-        proxy = globalStore[objName]
-        proxy[varName] = value
-        globalStore[objName] = proxy
-    """
 
 
 
@@ -406,8 +391,6 @@ def evalStatement(classMap,
                   invert,
                   storePath,
                   localStore = None):
-
-
     global ProcessRefCounter
     global ProcessObjName
 
@@ -463,6 +446,10 @@ def evalStatement(classMap,
                     raise Exception('you must input index integer for list. not String')
 
                 if localStore is None: 
+
+                    if not isinstance(globalStore[envObjName][nameOfList], list):
+                        raise Exception("List is not Initialized")
+
                     result = getAssignmentResult(
                             statement[1],
                             invert,
@@ -535,6 +522,8 @@ def evalStatement(classMap,
             else:
                 # +=, -=, ^=, !=, &=  etc...
                 if localStore is None: 
+                    print(globalStore[envObjName])
+                    print(statement)
                     result = getAssignmentResult(statement[1],
                                              invert,
                                              globalStore[envObjName][statement[2][0]],
@@ -915,11 +904,12 @@ def evalStatement(classMap,
                     else:
                         if a['name'] in globalStore[envObjName][statement[1]].keys():
                             raise Exception('arg name is already defined')
+                        
 
-                        # must be synchronized
-                        tmp = globalStore[envObjName]
-                        tmp[statement[1]][a['name']] = globalStore[envObjName][PassedArgs[i]]
-                        globalStore[envObjName] = tmp
+                        # localStore == None より、envは最上階のはず
+                        storePathToArg = storePath + '/' + statement[1]
+                        value = getValueByPath(globalStore, storePath, PassedArgs[i])
+                        updateGlobalStoreByPath(globalStore, storePathToArg, a['name'], value)
 
                         
 
@@ -928,13 +918,16 @@ def evalStatement(classMap,
 
                         separatedObjName = getValueByPath(globalStore, storePath, statement[1])
 
+                        if separatedObjName == None:
+                            
+                            raise Exception(statement[1] + ' is not constructed. you can construct by \"new\"')
+
                         if a['name'] in globalStore[separatedObjName].keys():
                             raise Exception('arg name is already defined')
 
-                        # must be synchronized
-                        tmp = globalStore[separatedObjName]
-                        tmp[statement[1]][a['name']] = getValueByPath(globalStore, storePath, PassedArgs[i])
-                        globalStore[separatedObjName] = tmp
+                        # 引数の値を一時的にオブジェクトの中に格納する
+                        value = getValueByPath(globalStore, storePath, PassedArgs[i])
+                        updateGlobalStoreByPath(globalStore, separatedObjName, a['name'], value)
                     else:
                         obj = getValueByPath(globalStore, storePath, statement[1])
                         assert isinstance(obj, dict)
@@ -1281,10 +1274,7 @@ def evalStatement(classMap,
 
         if localStore is None: 
 
-            # must be synchronized
-            tmp = globalStore[envObjName]
-            tmp.pop(id1)
-            globalStore[envObjName] = tmp
+            deleteVarGlobalStore(globalStore, envObjName, id1)
         else:
             deleteVarGlobalStoreByPath(globalStore,storePath,id1)
 

@@ -2,6 +2,20 @@ import multiprocessing as mp
 import time
 
 
+def popVarOfDict(dic, p, varName, sep="/"):
+    lis = p.split(sep)
+    def _(dic, lis, sep):
+        if len(lis) == 0:
+            return 
+        if len(lis) == 1:
+            if isinstance(varName, list):
+                dic[lis[0]].pop(varName[0])
+            else:
+                dic[lis[0]].pop(varName)
+        else:
+            _(dic.get(lis[0], {}), lis[1:], sep)
+    _(dic, lis, sep=sep)
+
 def assignVarAndGetDictByAddress(dic, p, varName, value, sep="/"):
     lis = p.split(sep)
     def _(dic, lis, sep):
@@ -79,10 +93,36 @@ def storeCycle(q, globalStore):
                 print('send')
                 request[4].send('signal')
 
-            elif(len(request) == 3):
+            elif(len(request) == 4):
+                # deleteByPath
                 if(request[0] == "deletePath"):
                     storePath = request[1]
                     varName = request[2]
+
+                    l = storePath.split('/')
+                    callerObjName = l[0]
+
+                    tmpCaller = globalStore[callerObjName]
+                    copyGlobalStore = { callerObjName : tmpCaller}
+
+                    popVarOfDict(copyGlobalStore, storePath, varName)
+
+                    globalStore[callerObjName] = copyGlobalStore[callerObjName]
+                    print('deleteByPath')
+                
+
+                elif(request[0] == "delete"):
+
+                    envObjName = request[1]
+                    id1 = request[2]
+
+                    tmp = globalStore[envObjName]
+                    tmp.pop(id1)
+                    globalStore[envObjName] = tmp
+
+                print('send')
+                request[3].send('signal')
+
 
         time.sleep(0.1)
 

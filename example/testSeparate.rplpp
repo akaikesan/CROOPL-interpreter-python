@@ -3,10 +3,10 @@ class Program
     int x
 
     method main()
-        new separate Fib f
+        new Fib f
         call f::init()
-        call f::initSeparate()
-        uncall f::initSeparate()
+        x += 123
+        call f::initSeparate(x)
 
 
 class Fib
@@ -17,20 +17,19 @@ class Fib
     method init()
         new int[2] xs
 
-    method initSeparate()
+    method initSeparate(int x)
         new separate Fib g
+        call g::init()
+        call g::minus(x)
         new separate Fib f
     
-    method minus()
+    method minus(int x)
         xs[1] -= 1 / 100 + 1
+        x += xs[1]
 
     method shiftLeft()
         xs[0] += xs[1] + 1
   
-    method fib()
-        call g::init()
-        call g::minus()
-        call g::shiftLeft()
 
      method get (int out)
         out ^= xs[1]

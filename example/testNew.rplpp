@@ -1,13 +1,16 @@
 class Program
     int result
+    int[] xs
     Fib f
 
     method main()
+        call init()
+        result += 100
         new Fib f
-        call f::init()
-        call f::fib()
-        call f::get(result)
+        call f::fib(result)
 
+    method init()
+        new int[2] xs
 
 class Fib
     int[] xs
@@ -17,16 +20,13 @@ class Fib
     method init()
         new int[2] xs
     
-    method minus()
-        xs[1] -= 100
-        print xs[1]
+    method minus(int result)
+        x += result
   
-    method fib()
+    method fib(int result)
         new Fib f
-        call minus()
         call f::init()
-        call f::minus()
+        call f::minus(result)
 
      method get (int out)
         out ^= xs[1]
-  
