@@ -56,6 +56,8 @@ def updateGlobalStoreByPath(globalStore, storePath, varName, value):
     callerObjName = l[0]
 
 
+
+    # must be synchronized
     tmpCaller = globalStore[callerObjName]
     copyGlobalStore = { callerObjName : tmpCaller}
 
@@ -71,6 +73,8 @@ def deleteVarGlobalStoreByPath(globalStore, storePath, varName):
     callerObjName = l[0]
 
 
+
+    # must be synchronized
     tmpCaller = globalStore[callerObjName]
     copyGlobalStore = { callerObjName : tmpCaller}
 
@@ -169,7 +173,7 @@ def addSeparatedObjToStore(classMap, className, varName, globalStore):
             newObj['type'] = className
             newObj[f] = {}
 
-    # put in globalStore directly
+    # does not have to be synchronized
     globalStore[varName] = newObj 
 
 
@@ -255,6 +259,8 @@ def checkListIsDeletable(list):
 # this is why Here use proxy ↓
 # https://stackoverflow.com/questions/26562287/value-update-in-manager-dict-not-reflected
 def updateGlobalStore(globalStore, objName, varName, value):
+
+    # must be synchronized
     if isinstance(varName, list):
         proxy = globalStore[objName]
         try:
@@ -392,6 +398,7 @@ def evalStatement(classMap,
                     # if list Elem will be assigned to list
                     # list <=> list
                     if localStore == None:
+                        # get Value
                         tmp = globalStore[envObjName][statement[2][0][0]][int(statement[2][0][1][0])]
                         updateGlobalStore(globalStore, envObjName, statement[2][0],globalStore[envObjName][statement[3][0][0]][int(statement[3][0][1][0])])
                         updateGlobalStore(globalStore, envObjName, statement[3][0],tmp)
@@ -409,6 +416,7 @@ def evalStatement(classMap,
                 else:
                     # list <=> var
                     if localStore == None:
+                        # get Value
                         tmp = globalStore[envObjName][statement[2][0][0]][int(statement[2][0][1][0])]
                         updateGlobalStore(globalStore, envObjName, statement[2][0], globalStore[envObjName][statement[3][0]])
                         updateGlobalStore(globalStore, envObjName, statement[3][0],tmp)
@@ -462,6 +470,8 @@ def evalStatement(classMap,
                     # if list Elem will be assigned to list
                     # var <=> list
                     if localStore == None:
+
+                        # get Value
                         tmp = globalStore[envObjName][statement[2][0]]
                         updateGlobalStore(globalStore, envObjName, statement[2][0],globalStore[envObjName][statement[3][0][0]][int(statement[3][0][1][0])])
                         updateGlobalStore(globalStore, envObjName, statement[3][0],tmp)
@@ -480,6 +490,8 @@ def evalStatement(classMap,
                 else:
                     # var <=> var
                     if localStore == None:
+
+                        # get Value
                         tmp = globalStore[envObjName][statement[2][0]]
                         updateGlobalStore(globalStore, envObjName, statement[2][0], globalStore[envObjName][statement[3][0]])
                         updateGlobalStore(globalStore, envObjName, statement[3][0],tmp)
@@ -521,10 +533,8 @@ def evalStatement(classMap,
 
     elif (statement[0] == 'print'):
         if localStore == None:
-            print (storePath)
             output = evalExp(globalStore[envObjName],statement[1])
         else:
-            print (storePath)
             output = evalExp(getLocalStore(globalStore, storePath),statement[1])
 
         print(output)
@@ -743,7 +753,7 @@ def evalStatement(classMap,
 
                     if len(statement) == 4:
                         # delete separate
-
+                        # get Value
                         topLevelName = globalStore[envObjName][statement[2][0]]
 
                         checkObjIsDeletable(globalStore[topLevelName].keys(),
@@ -810,12 +820,15 @@ def evalStatement(classMap,
 
             if localStore == None:
                 if isinstance(globalStore[envObjName][statement[1]], str):
+                    # get Value
                     callerType = globalStore[globalStore[envObjName][statement[1]]]['type']
                 else:
+                    # get Value
                     callerType = globalStore[envObjName][statement[1]]['type']
             else:
                 v = getValueByPath(globalStore, storePath, statement[1])
                 if isinstance(v, str):
+                    # get Value
                     callerType = globalStore[v]['type']
                 else:
                     assert isinstance(v, dict)
@@ -835,6 +848,7 @@ def evalStatement(classMap,
 
 
             if localStore == None:
+                # get Value
                 callerObjGlobalName = globalStore[envObjName][statement[1]]
             else:
                 callerObjGlobalName = getValueByPath(globalStore, storePath, statement[1])
@@ -862,6 +876,7 @@ def evalStatement(classMap,
                 if localStore == None:
                     if callerIsSeparated:
 
+                        # get Value
                         separatedObjName = globalStore[envObjName][statement[1]]
 
                         if a['name'] in globalStore[separatedObjName].keys():
@@ -875,7 +890,7 @@ def evalStatement(classMap,
                         if a['name'] in globalStore[envObjName][statement[1]].keys():
                             raise Exception('arg name is already defined')
 
-                        # put in globalStore directly
+                        # must be synchronized
                         tmp = globalStore[envObjName]
                         tmp[statement[1]][a['name']] = globalStore[envObjName][PassedArgs[i]]
                         globalStore[envObjName] = tmp
@@ -890,7 +905,7 @@ def evalStatement(classMap,
                         if a['name'] in globalStore[separatedObjName].keys():
                             raise Exception('arg name is already defined')
 
-                        # put in globalStore directly
+                        # must be synchronized
                         tmp = globalStore[separatedObjName]
                         tmp[statement[1]][a['name']] = getValueByPath(globalStore, storePath, PassedArgs[i])
                         globalStore[separatedObjName] = tmp
@@ -950,6 +965,7 @@ def evalStatement(classMap,
                     tmp = globalStore[envObjName]
                 elif localStore != None:
                     # nested Objects CALL
+                    # use getLocalStore carefully. this is ok
                     tmp = getLocalStore(globalStore, storePath)
                 else:
                     raise Exception("call error: caller not separated and localStore is None")
@@ -979,8 +995,6 @@ def evalStatement(classMap,
 
                 if localStore == None :
                     # update globalStore if this is top-level CALL
-                    # put in globalStore directly
-                    #globalStore[envObjName] = tmp
                     pass
 
                 
@@ -996,9 +1010,10 @@ def evalStatement(classMap,
                              tmp[k] = globalStore[envObjName][statement[1]][argsInfo[i]['name']]
                              tmp[statement[1]].pop(argsInfo[i]['name'])
 
-                        # put in globalStore directly
+                        # must be synchronized
                         globalStore[envObjName] = tmp  
                     else:
+                        # use getLocalStore carefully. this is ok
                         locSt = getLocalStore(globalStore, storePath)
                         assert isinstance(locSt, dict)
                         if k in locSt.keys():
@@ -1199,13 +1214,14 @@ def evalStatement(classMap,
                                id1, 
                                evalExp(globalStore[envObjName], exp1))
         else:
+
+            # use getLocalStore carefully. this is ok
             obj = getLocalStore(globalStore, storePath)
             assert isinstance(obj, dict)
             if id1 in obj.keys():
                  raise Exception('local variable is already defined')
 
-            locSt = getLocalStore(globalStore, storePath)
-            res = evalExp(locSt, exp1)
+            res = evalExp(obj, exp1)
             updateGlobalStoreByPath(globalStore, storePath, id1, res)
 
 
@@ -1238,13 +1254,13 @@ def evalStatement(classMap,
                 raise Exception("delocal Error")
 
         if localStore is None: 
-            # put in globalStore directly
+
+            # must be synchronized
             tmp = globalStore[envObjName]
             tmp.pop(id1)
             globalStore[envObjName] = tmp
         else:
             deleteVarGlobalStoreByPath(globalStore,storePath,id1)
-            localStore[envObjName].pop(id1)
 
 
 
@@ -1318,7 +1334,7 @@ def interpreter(classMap,
                     result[args[i]] = globalStore[objName][a['name']]
                     tmpThis.pop(a['name'])
 
-                # put in globalStore directly
+                # must be synchronized
                 globalStore[objName] = tmpThis
                 globalStore[callerObjName] = refrectArgsAndGetDictByAddress(tmpCaller, dictAddress, result)[callerObjName]
                 print('send')
