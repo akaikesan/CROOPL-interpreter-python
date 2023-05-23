@@ -10,10 +10,15 @@ class Program
 
 class Fib
     int[] xs
+    int x
+    int y
     
     method init()
         new int[2] xs
+        x += 2
+        y += 229
         xs[1] ^= 12
 
     method out(int output)
+        x <=> y
         output <=> xs[1]

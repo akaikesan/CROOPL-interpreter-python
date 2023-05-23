@@ -10,37 +10,25 @@ class Program
         call loc()
 
     method loc()
-        new separate Fib g
+        new Fib g
         new Fib f
         call g::init(f,x)
-        uncall g::init(f,x)
 
 class Fib
     int[] xs
     Fib g
     Fib f
+    int y
     
     method init(Fib h, int j)
+        new Fib g
+        call g::minus(j)
         call h::array()
-        j += 311
 
     method array()
         new int[2] xs
 
-    method initSeparate()
-        new separate Fib g
-        new separate Fib f
     
-    method minus()
-        xs[1] -= 1 / 100 + 1
+    method minus(int j)
+       j -= 12
 
-    method shiftLeft()
-        xs[0] += xs[1] + 1
-  
-    method fib()
-        call g::init()
-        call g::minus()
-        call g::shiftLeft()
-
-     method get (int out)
-        out ^= xs[1]

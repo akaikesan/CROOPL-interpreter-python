@@ -22,13 +22,14 @@ class Root
       delocal int z = bit / 2
 
 class Program
+
     int num
     int root
     method main()
         num += 144
         local Root r = nil
-          new separate Root r
+          new  Root r
           call r::root(num, root)
-          delete separate Root r
+          delete Root r
         delocal Root r = nil
         print root

@@ -4,7 +4,7 @@ import time
 
 # Storeはfオブジェクトを使いたい場合、{, f:{}, ...} の形でevalStatementに渡す。
 
-def getDictByAddress(dic, p, result, sep="/"):
+def refrectArgsAndGetDictByAddress(dic, p, result, sep="/"):
     lis = p.split(sep)
     def _(dic, lis, result, sep, default):
         if len(lis) == 0:
@@ -16,6 +16,96 @@ def getDictByAddress(dic, p, result, sep="/"):
             _(dic.get(lis[0], {}), lis[1:], result ,sep, default)
     _(dic, lis, result, sep=sep, default=None)
     return dic
+
+
+
+def popVarOfDict(dic, p, varName, sep="/"):
+    lis = p.split(sep)
+    def _(dic, lis, sep):
+        if len(lis) == 0:
+            return 
+        if len(lis) == 1:
+            if isinstance(varName, list):
+                dic[lis[0]].pop(varName[0])
+            else:
+                dic[lis[0]].pop(varName)
+        else:
+            _(dic.get(lis[0], {}), lis[1:], sep)
+    _(dic, lis, sep=sep)
+
+
+def assignVarAndGetDictByAddress(dic, p, varName, value, sep="/"):
+    lis = p.split(sep)
+    def _(dic, lis, sep):
+        if len(lis) == 0:
+            return 
+        if len(lis) == 1:
+            if isinstance(varName, list):
+                index = int(varName[1][0])
+                dic[lis[0]][varName[0]][index] = value
+            else:
+                dic[lis[0]][varName] = value 
+        else:
+            _(dic.get(lis[0], {}), lis[1:], sep)
+    _(dic, lis, sep=sep)
+
+
+def updateGlobalStoreByPath(globalStore, storePath, varName, value):
+
+    l = storePath.split('/')
+    callerObjName = l[0]
+
+
+    tmpCaller = globalStore[callerObjName]
+    copyGlobalStore = { callerObjName : tmpCaller}
+
+    assignVarAndGetDictByAddress(copyGlobalStore, storePath, varName, value)
+
+    globalStore[callerObjName] = copyGlobalStore[callerObjName]
+
+
+
+def deleteVarGlobalStoreByPath(globalStore, storePath, varName):
+
+    l = storePath.split('/')
+    callerObjName = l[0]
+
+
+    tmpCaller = globalStore[callerObjName]
+    copyGlobalStore = { callerObjName : tmpCaller}
+
+    popVarOfDict(copyGlobalStore, storePath, varName)
+
+    globalStore[callerObjName] = copyGlobalStore[callerObjName]
+
+
+def getValueByPath(dic, p, varName, sep="/"):
+    lis = p.split(sep)
+    def _(dic, lis, sep):
+        if len(lis) == 0:
+            return 
+        if len(lis) == 1:
+            if isinstance(varName, list):
+                index = int(varName[1][0])
+                return dic[lis[0]][varName[0]][index] 
+            else:
+                return dic[lis[0]][varName]
+        else:
+            return _(dic.get(lis[0], {}), lis[1:], sep)
+    return _(dic, lis, sep=sep)
+
+
+def getLocalStore(dic, p, sep="/"):
+    lis = p.split(sep)
+    def _(dic, lis, sep):
+        if len(lis) == 0:
+            return 
+        if len(lis) == 1:
+            return dic[lis[0]]
+        else:
+            return _(dic.get(lis[0], {}), lis[1:], sep)
+    return _(dic, lis, sep=sep)
+
 
 
 
@@ -181,7 +271,6 @@ def updateGlobalStore(globalStore, objName, varName, value):
 
 
 
-
 def getType(classMap, thisType, varName):
     return classMap[thisType]['fields'][varName]
     
@@ -208,6 +297,7 @@ def evalExp(thisStore, exp):
     if len(exp) == 1:  
         # [<int>] 
         if isinstance(exp[0], list):
+            assert isinstance(thisStore[exp[0][0]], list)
             return thisStore[exp[0][0]][int(exp[0][1][0])]
 
         if exp[0].isdecimal():
@@ -284,7 +374,6 @@ def evalStatement(classMap,
                   invert,
                   storePath,
                   localStore = None):
-    print(localStore == None)
 
 
     global ProcessRefCounter
@@ -307,9 +396,13 @@ def evalStatement(classMap,
                         updateGlobalStore(globalStore, envObjName, statement[2][0],globalStore[envObjName][statement[3][0][0]][int(statement[3][0][1][0])])
                         updateGlobalStore(globalStore, envObjName, statement[3][0],tmp)
                     else:
-                        tmp = localStore[envObjName][statement[2][0][0]][int(statement[2][0][1][0])]
-                        localStore[envObjName][statement[2][0][0]][int(statement[2][0][1][0])] = localStore[envObjName][statement[3][0][0]][int(statement[3][0][1][0])]
-                        localStore[envObjName][statement[3][0][0]][int(statement[3][0][1][0])] = tmp
+
+                        tmpleft = getValueByPath(globalStore, storePath, statement[2][0])
+                        tmpright= getValueByPath(globalStore, storePath, statement[3][0])
+
+                        updateGlobalStoreByPath(globalStore,storePath,statement[3][0], tmpleft)
+                        updateGlobalStoreByPath(globalStore,storePath,statement[2][0], tmpright)
+
 
 
 
@@ -320,12 +413,15 @@ def evalStatement(classMap,
                         updateGlobalStore(globalStore, envObjName, statement[2][0], globalStore[envObjName][statement[3][0]])
                         updateGlobalStore(globalStore, envObjName, statement[3][0],tmp)
                     else:
-                        tmp = localStore[envObjName][statement[2][0][0]][int(statement[2][0][1][0])]
-                        localStore[envObjName][statement[2][0][0]][
-                                int(statement[2][0][1][0])] = localStore[envObjName][statement[3][0]]
-                        localStore[envObjName][statement[3][0]] = tmp
-            else:
 
+                        tmpleft = getValueByPath(globalStore, storePath, statement[2][0])
+                        tmpright= getValueByPath(globalStore, storePath, statement[3][0])
+
+                        updateGlobalStoreByPath(globalStore,storePath,statement[3][0], tmpleft)
+                        updateGlobalStoreByPath(globalStore,storePath,statement[2][0], tmpright)
+
+
+            else:
                 nameOfList = statement[2][0][0]
                 try:
                     index = int(statement[2][0][1][0])
@@ -346,12 +442,16 @@ def evalStatement(classMap,
                             result
                     )
                 else:
+
+                    leftContent = getValueByPath(globalStore, storePath, statement[2][0])
+
                     result = getAssignmentResult(statement[1],
                                              invert,
-                                             localStore[envObjName][nameOfList][index],
-                                             evalExp(localStore[envObjName], statement[3])
+                                             leftContent, #leftContent,
+                                             evalExp(getLocalStore(globalStore, storePath), statement[3])
                                              )
-                    localStore[envObjName][nameOfList][index] = result
+                    updateGlobalStoreByPath(globalStore,storePath,statement[2][0], result)
+
 
         else:
 
@@ -366,10 +466,14 @@ def evalStatement(classMap,
                         updateGlobalStore(globalStore, envObjName, statement[2][0],globalStore[envObjName][statement[3][0][0]][int(statement[3][0][1][0])])
                         updateGlobalStore(globalStore, envObjName, statement[3][0],tmp)
                     else:
-                        tmp = localStore[envObjName][statement[2][0]]
-                        localStore[envObjName][
-                                statement[2][0]] = localStore[envObjName][statement[3][0][0]][int(statement[3][0][1][0])]
-                        localStore[envObjName][statement[3][0][0]][int(statement[3][0][1][0])] = tmp
+
+
+                        tmpleft = getValueByPath(globalStore, storePath, statement[2][0])
+                        tmpright= getValueByPath(globalStore, storePath, statement[3][0])
+
+                        updateGlobalStoreByPath(globalStore,storePath,statement[3][0], tmpleft)
+                        updateGlobalStoreByPath(globalStore,storePath,statement[2][0], tmpright)
+
 
 
 
@@ -380,9 +484,14 @@ def evalStatement(classMap,
                         updateGlobalStore(globalStore, envObjName, statement[2][0], globalStore[envObjName][statement[3][0]])
                         updateGlobalStore(globalStore, envObjName, statement[3][0],tmp)
                     else:
-                        tmp = localStore[envObjName][statement[2][0]]
-                        localStore[envObjName][statement[2][0]] = localStore[envObjName][statement[3][0]]
-                        localStore[envObjName][statement[3][0]] = tmp
+
+
+                        tmpleft = getValueByPath(globalStore, storePath, statement[2][0])
+                        tmpright= getValueByPath(globalStore, storePath, statement[3][0])
+
+                        updateGlobalStoreByPath(globalStore,storePath,statement[3][0], tmpleft)
+                        updateGlobalStoreByPath(globalStore,storePath,statement[2][0], tmpright)
+
 
 
             else:
@@ -394,10 +503,11 @@ def evalStatement(classMap,
                                              evalExp(globalStore[envObjName], statement[3])
                                              )
                 else:
+                    left = getValueByPath(globalStore, storePath, statement[2][0])
                     result = getAssignmentResult(statement[1],
                                              invert,
-                                             localStore[envObjName][statement[2][0]],
-                                             evalExp(localStore[envObjName], statement[3])
+                                             left,
+                                             evalExp(getLocalStore(globalStore, storePath), statement[3])
                                              )
                 if localStore is None: 
                     updateGlobalStore(globalStore, 
@@ -406,13 +516,16 @@ def evalStatement(classMap,
                                       result
                                       )
                 else:
-                    localStore[envObjName][statement[2][0]] = result
+
+                    updateGlobalStoreByPath(globalStore,storePath,statement[2][0], result)
 
     elif (statement[0] == 'print'):
         if localStore == None:
+            print (storePath)
             output = evalExp(globalStore[envObjName],statement[1])
         else:
-            output = evalExp(localStore[envObjName],statement[1])
+            print (storePath)
+            output = evalExp(getLocalStore(globalStore, storePath),statement[1])
 
         print(output)
 
@@ -434,8 +547,8 @@ def evalStatement(classMap,
                                       {}
                                       )
                 else:
-                    checkListIsDeletable(localStore[envObjName][statement[2][0]])
-                    localStore[envObjName][statement[2][0]] = {}
+                    checkListIsDeletable(getValueByPath(globalStore, storePath, statement[2][0]))
+                    updateGlobalStoreByPath(globalStore,storePath,statement[2][0], {})
 
             else: 
                 # delete object (not list).
@@ -469,29 +582,39 @@ def evalStatement(classMap,
                     if len(statement) == 4:
 
                         # delete separate
-                        topLevelName = localStore[envObjName][statement[2][0]]
+
+                        topLevelName = getValueByPath(globalStore, storePath, statement[2][0])
+
+                        assert isinstance(topLevelName, str)
 
                         checkObjIsDeletable(globalStore[topLevelName].keys(),
                                             globalStore[topLevelName])
                         ProcDict[topLevelName].terminate()
-
                         globalStore.pop(topLevelName)
-                        localStore[envObjName][statement[2][0]] = {}
+
+                        updateGlobalStoreByPath(globalStore,storePath,statement[2][0], {})
 
                     else:
                         # delete object (not separated)
-                        checkObjIsDeletable(localStore[envObjName][statement[2][0]].keys(),
-                                            localStore[envObjName][statement[2][0]])
-                        localStore[envObjName][statement[2][0]] = {}
+                        obj = getValueByPath(globalStore, storePath, statement[2][0])
+                        
+                        assert isinstance(obj, dict)
+
+                        checkObjIsDeletable(obj.keys(), obj)
+
+                        updateGlobalStoreByPath(globalStore,storePath,statement[2][0], {})
 
         else:
             # simple new
             if isinstance(statement[1], list): 
                 # new list
                 if localStore == None:
-                    updateGlobalStore(globalStore, envObjName, statement[2][0], makeStore(classMap, statement[1]))
+                    updateGlobalStore(globalStore,
+                                      envObjName,
+                                      statement[2][0], 
+                                      makeStore(classMap, statement[1]))
                 else:
-                    localStore[envObjName][statement[2][0]] = makeStore(classMap, statement[1])
+                    updateGlobalStoreByPath(globalStore,storePath,statement[2][0], makeStore(classMap, statement[1]))
             else: 
                 # new object
                 if len(statement) == 4: 
@@ -513,7 +636,8 @@ def evalStatement(classMap,
                                           statement[2][0],
                                           varName)
                     else:
-                        localStore[envObjName][statement[2][0]] = varName
+
+                        updateGlobalStoreByPath(globalStore,storePath,statement[2][0], varName)
 
                     global p
 
@@ -533,7 +657,7 @@ def evalStatement(classMap,
                                           makeStore(classMap, statement[1])
                                           )
                     else:
-                        localStore[envObjName][statement[2][0]] = makeStore(classMap, statement[1])
+                        updateGlobalStoreByPath(globalStore,storePath,statement[2][0], makeStore(classMap, statement[1]))
 
 
     elif (statement[0] == 'delete'):
@@ -545,7 +669,7 @@ def evalStatement(classMap,
                 if localStore == None:
                     updateGlobalStore(globalStore, envObjName, statement[2][0], makeStore(classMap, statement[1]))
                 else:
-                    localStore[envObjName][statement[2][0]] = makeStore(classMap, statement[1])
+                    updateGlobalStoreByPath(globalStore,storePath,statement[2][0], makeStore(classMap, statement[1]))
             else: 
                 # new object
                 if len(statement) == 4: 
@@ -567,7 +691,8 @@ def evalStatement(classMap,
                                           statement[2][0],
                                           varName)
                     else:
-                        localStore[envObjName][statement[2][0]] = varName
+
+                        updateGlobalStoreByPath(globalStore,storePath,statement[2][0], varName)
 
                     global p
 
@@ -587,7 +712,8 @@ def evalStatement(classMap,
                                           makeStore(classMap, statement[1])
                                           )
                     else:
-                        localStore[envObjName][statement[2][0]] = makeStore(classMap, statement[1])
+
+                        updateGlobalStoreByPath(globalStore,storePath,statement[2][0], makeStore(classMap, statement[1]))
 
         else:
             # delete (inverted new)
@@ -601,8 +727,14 @@ def evalStatement(classMap,
                                       {}
                                       )
                 else:
-                    checkListIsDeletable(localStore[envObjName][statement[2][0]])
-                    localStore[envObjName][statement[2][0]] = {}
+
+                    obj = getValueByPath(globalStore, storePath, statement[2][0])
+                    
+                    assert isinstance(obj, dict)
+
+                    checkObjIsDeletable(obj.keys(), obj)
+                    #checkListIsDeletable(localStore[envObjName][statement[2][0]])
+                    updateGlobalStoreByPath(globalStore,storePath,statement[2][0], {})
 
             else: 
                 # delete object (not list).
@@ -637,21 +769,31 @@ def evalStatement(classMap,
                     # local Scope
                     if len(statement) == 4:
 
+
                         # delete separate
-                        topLevelName = localStore[envObjName][statement[2][0]]
+                        topLevelName = getValueByPath(globalStore, storePath, statement[2][0])
+
+                        assert isinstance(topLevelName, str)
 
                         checkObjIsDeletable(globalStore[topLevelName].keys(),
                                             globalStore[topLevelName])
                         ProcDict[topLevelName].terminate()
 
                         globalStore.pop(topLevelName)
-                        localStore[envObjName][statement[2][0]] = {}
+
+                        updateGlobalStoreByPath(globalStore,storePath,statement[2][0], {})
 
                     else:
                         # delete object (not separated)
-                        checkObjIsDeletable(localStore[envObjName][statement[2][0]].keys(),
-                                            localStore[envObjName][statement[2][0]])
-                        localStore[envObjName][statement[2][0]] = {}
+                        #checkObjIsDeletable(localStore[envObjName][statement[2][0]].keys(), localStore[envObjName][statement[2][0]])
+
+                        obj = getValueByPath(globalStore, storePath, statement[2][0])
+                        
+                        assert isinstance(obj, dict)
+
+                        checkObjIsDeletable(obj.keys(), obj)
+
+                        updateGlobalStoreByPath(globalStore,storePath,statement[2][0], {})
 
     elif (statement[0] == 'copy'):
         if invert:
@@ -672,10 +814,12 @@ def evalStatement(classMap,
                 else:
                     callerType = globalStore[envObjName][statement[1]]['type']
             else:
-                if isinstance(localStore[envObjName][statement[1]], str):
-                    callerType = globalStore[localStore[envObjName][statement[1]]]['type']
+                v = getValueByPath(globalStore, storePath, statement[1])
+                if isinstance(v, str):
+                    callerType = globalStore[v]['type']
                 else:
-                    callerType = localStore[envObjName][statement[1]]['type']
+                    assert isinstance(v, dict)
+                    callerType = v['type']
 
             callMethodInfo = classMap[callerType]['methods'][statement[2]]
             argsInfo = callMethodInfo["args"]
@@ -693,7 +837,7 @@ def evalStatement(classMap,
             if localStore == None:
                 callerObjGlobalName = globalStore[envObjName][statement[1]]
             else:
-                callerObjGlobalName = localStore[envObjName][statement[1]]
+                callerObjGlobalName = getValueByPath(globalStore, storePath, statement[1])
 
 
             if isinstance(callerObjGlobalName, str):
@@ -741,20 +885,27 @@ def evalStatement(classMap,
                 else:
                     if callerIsSeparated:
 
-                        separatedObjName = localStore[envObjName][statement[1]]
+                        separatedObjName = getValueByPath(globalStore, storePath, statement[1])
 
                         if a['name'] in globalStore[separatedObjName].keys():
                             raise Exception('arg name is already defined')
 
                         # put in globalStore directly
                         tmp = globalStore[separatedObjName]
-                        tmp[statement[1]][a['name']] = localStore[envObjName][PassedArgs[i]]
+                        tmp[statement[1]][a['name']] = getValueByPath(globalStore, storePath, PassedArgs[i])
                         globalStore[separatedObjName] = tmp
                     else:
-                        if a['name'] in localStore[envObjName][statement[1]].keys():
+                        obj = getValueByPath(globalStore, storePath, statement[1])
+                        assert isinstance(obj, dict)
+                        if a['name'] in obj.keys():
                             raise Exception('arg name is already defined')
+                        
+                        storePathToPass = storePath + '/' + statement[1]
+                        argContent = getValueByPath(globalStore, storePath, PassedArgs[i])
 
-                        localStore[envObjName][statement[1]][a['name']] = localStore[envObjName][PassedArgs[i]]
+
+                        updateGlobalStoreByPath(globalStore, storePathToPass, a['name'], argContent)
+
 
                         
     
@@ -799,7 +950,7 @@ def evalStatement(classMap,
                     tmp = globalStore[envObjName]
                 elif localStore != None:
                     # nested Objects CALL
-                    tmp = localStore[envObjName]
+                    tmp = getLocalStore(globalStore, storePath)
                 else:
                     raise Exception("call error: caller not separated and localStore is None")
 
@@ -829,7 +980,8 @@ def evalStatement(classMap,
                 if localStore == None :
                     # update globalStore if this is top-level CALL
                     # put in globalStore directly
-                    globalStore[envObjName] = tmp
+                    #globalStore[envObjName] = tmp
+                    pass
 
                 
 
@@ -842,16 +994,22 @@ def evalStatement(classMap,
                         tmp = globalStore[envObjName]
                         if k in globalStore[envObjName].keys():
                              tmp[k] = globalStore[envObjName][statement[1]][argsInfo[i]['name']]
-                             tmp[statement[1]].pop(
-                                     argsInfo[i]['name'])
+                             tmp[statement[1]].pop(argsInfo[i]['name'])
 
                         # put in globalStore directly
                         globalStore[envObjName] = tmp  
                     else:
-                        if k in localStore[envObjName].keys():
+                        locSt = getLocalStore(globalStore, storePath)
+                        assert isinstance(locSt, dict)
+                        if k in locSt.keys():
 
-                           localStore[envObjName][k] = localStore[envObjName][statement[1]][argsInfo['name']]
-                           localStore[envObjName].pop(k)
+                            value = getValueByPath(globalStore, storePath + '/' + statement[1], argsInfo[i]['name'])
+                            updateGlobalStoreByPath(globalStore,storePath, k, value)
+                            updateGlobalStoreByPath(globalStore,storePath, k, value)
+                            deleteVarGlobalStoreByPath(globalStore, storePath + '/' + statement[1], argsInfo[i]['name'])
+
+
+
 
                 # ----------- to here
 
@@ -900,7 +1058,8 @@ def evalStatement(classMap,
         if localStore is None: 
             result_e1 = evalExp(globalStore[envObjName], e1)
         else:
-            result_e1 = evalExp(localStore[envObjName], e1)
+            
+            result_e1 = evalExp(getLocalStore(globalStore, storePath), e1)
 
         if result_e1:
             if invert:
@@ -926,7 +1085,7 @@ def evalStatement(classMap,
         if localStore is None: 
             result_e2 = evalExp(globalStore[envObjName], e2)
         else:
-            result_e2 = evalExp(localStore[envObjName], e2)
+            result_e2 = evalExp(getLocalStore(globalStore, storePath), e2)
 
         if result_e2 == result_e1:  # e2 e1
             return
@@ -952,7 +1111,7 @@ def evalStatement(classMap,
         if localStore is None: 
             result_e1 = evalExp(globalStore[envObjName], e1)
         else:
-            result_e1 = evalExp(localStore[envObjName], e1)
+            result_e1 = evalExp(getLocalStore(globalStore, storePath), e1)
 
 
         if not result_e1:
@@ -976,7 +1135,7 @@ def evalStatement(classMap,
             if localStore is None: 
                 result_e2 = evalExp(globalStore[envObjName], e2)
             else:
-                result_e2 = evalExp(localStore[envObjName], e2)
+                result_e2 = evalExp(getLocalStore(globalStore, storePath), e2)
 
             if result_e2:  # e2 e1
                 break
@@ -1000,7 +1159,7 @@ def evalStatement(classMap,
             if localStore is None: 
                 result_e1 = evalExp(globalStore[envObjName], e1)
             else:
-                result_e1 = evalExp(localStore[envObjName], e1)
+                result_e1 = evalExp(getLocalStore(globalStore, storePath), e1)
 
             # result_e1 is while condition.
             # if result_e1 is false, break while loop.
@@ -1040,10 +1199,15 @@ def evalStatement(classMap,
                                id1, 
                                evalExp(globalStore[envObjName], exp1))
         else:
-            if id1 in localStore[envObjName].keys():
+            obj = getLocalStore(globalStore, storePath)
+            assert isinstance(obj, dict)
+            if id1 in obj.keys():
                  raise Exception('local variable is already defined')
 
-            localStore[envObjName][id1] = evalExp(localStore[envObjName], exp1)
+            locSt = getLocalStore(globalStore, storePath)
+            res = evalExp(locSt, exp1)
+            updateGlobalStoreByPath(globalStore, storePath, id1, res)
+
 
         if statement[1] != 'int' and statement[3][0] != 'nil':
             raise Exception('local initiation is not int or nil')
@@ -1064,7 +1228,7 @@ def evalStatement(classMap,
             result_id2_EQ_exp2 = evalExp(globalStore[envObjName],
                                          [[id2],'=', exp2])
         else:
-            result_id2_EQ_exp2 = evalExp(localStore[envObjName],
+            result_id2_EQ_exp2 = evalExp(getLocalStore(globalStore, storePath),
                                          [[id2],'=', exp2])
 
         if not result_id2_EQ_exp2:
@@ -1079,6 +1243,7 @@ def evalStatement(classMap,
             tmp.pop(id1)
             globalStore[envObjName] = tmp
         else:
+            deleteVarGlobalStoreByPath(globalStore,storePath,id1)
             localStore[envObjName].pop(id1)
 
 
@@ -1107,7 +1272,7 @@ def interpreter(classMap,
     while(True):
         
         try:
-            x = q.qsize()
+            sizeOfRequestQueue = q.qsize()
         except:
             print('ERROR:',ProcessObjName)
             raise Exception("interpreter error")
@@ -1152,9 +1317,10 @@ def interpreter(classMap,
                 for i, a in enumerate(argsInfo):
                     result[args[i]] = globalStore[objName][a['name']]
                     tmpThis.pop(a['name'])
+
                 # put in globalStore directly
                 globalStore[objName] = tmpThis
-                globalStore[callerObjName] = getDictByAddress(tmpCaller, dictAddress, result)[callerObjName]
+                globalStore[callerObjName] = refrectArgsAndGetDictByAddress(tmpCaller, dictAddress, result)[callerObjName]
                 print('send')
                 request[3].send('signal')
 

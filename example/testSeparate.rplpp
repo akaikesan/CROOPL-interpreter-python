@@ -3,10 +3,10 @@ class Program
     int x
 
     method main()
-        new separate Fib f
+        new  Fib f
         call f::init()
         call f::initSeparate()
-        call f::fib()
+        uncall f::initSeparate()
 
 
 class Fib
