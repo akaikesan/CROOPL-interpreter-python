@@ -95,6 +95,30 @@ def storeCycle(q, globalStore):
                     globalStore[callerObjName] = reflectArgsAndGetDictByAddress(tmpCaller, dictAddress, result)[callerObjName]
                 print('send')
                 request[6].send('signal')
+
+            if(len(request) == 6):
+                if (request[0] == "reflectArgsPassed"):
+                    print("reflectArgsPassed")
+
+                    # object that called
+                    callerObjName = request[1]
+                    # object that is called
+                    calledObjName = request[2]  
+                    argsInfo = request[3] 
+                    passedArgs = request[4] 
+
+                    tmp = globalStore[callerObjName]
+                    for i, k in enumerate(passedArgs):
+
+
+                        if k in globalStore[callerObjName].keys():
+                             tmp[k] = globalStore[callerObjName][calledObjName][argsInfo[i]['name']]
+                             tmp[calledObjName].pop(argsInfo[i]['name'])
+
+                        globalStore[callerObjName] = tmp  
+                    
+                print('send')
+                request[5].send('signal')
                 
 
             if(len(request) == 5):

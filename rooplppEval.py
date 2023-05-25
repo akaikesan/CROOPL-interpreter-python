@@ -50,6 +50,9 @@ def assignVarAndGetDictByAddress(dic, p, varName, value, sep="/"):
     _(dic, lis, sep=sep)
 
 
+
+
+
 def reflectArgsPassedSeparated(globalStore, callerObjName, objName, argsInfo, args, dictAddress):
 
     q = globalStore['#Store']
@@ -59,6 +62,24 @@ def reflectArgsPassedSeparated(globalStore, callerObjName, objName, argsInfo, ar
 
     parent_conn.recv()
     print('args reflected by path') 
+
+
+
+
+
+def reflectArgsPassed(globalStore, envObjName, calledObjName, argsInfo, passedArgs):
+
+
+    q = globalStore['#Store']
+
+    parent_conn, child_conn = mp.Pipe()
+
+    q.put(['reflectArgsPassed', envObjName, calledObjName, argsInfo, passedArgs, child_conn])
+
+
+    parent_conn.recv()
+    print('args reflected') 
+
 
 
 
@@ -1022,30 +1043,19 @@ def evalStatement(classMap,
 
                 
                 # reflect arguments to parent Object
-                # TODO: lock globalStore from here -------
-                for i, k in enumerate(PassedArgs):
-                    if localStore == None:
+                if localStore == None:
 
-                        
-                        tmp = globalStore[envObjName]
+                    reflectArgsPassed(globalStore,
+                                      envObjName, 
+                                      statement[1],
+                                      argsInfo, 
+                                      PassedArgs )
 
-                        if k in globalStore[envObjName].keys():
-                             tmp[k] = globalStore[
-                                     envObjName][
-                                             statement[1]][
-                                                     argsInfo[i]['name']
-                                                     ]
-                             tmp[statement[1]].pop(argsInfo[
-                                 i][
-                                     'name'])
-
-                        # must be synchronized
-                        globalStore[envObjName] = tmp  
-
-                    else:
+                else:
+                    locSt = getLocalStore(globalStore, storePath)
+                    assert isinstance(locSt, dict)
+                    for i, k in enumerate(PassedArgs):
                         # use getLocalStore carefully. this is ok
-                        locSt = getLocalStore(globalStore, storePath)
-                        assert isinstance(locSt, dict)
                         if k in locSt.keys():
 
                             value = getValueByPath(globalStore, storePath + '/' + statement[1], argsInfo[i]['name'])
@@ -1054,9 +1064,6 @@ def evalStatement(classMap,
                             deleteVarGlobalStoreByPath(globalStore, storePath + '/' + statement[1], argsInfo[i]['name'])
 
 
-
-
-                # ----------- to here
 
 
                 
@@ -1349,11 +1356,7 @@ def interpreter(classMap,
                           invert,
                           storePath)
 
-                argsInfo = classMap[
-                        className][
-                                'methods'][
-                                        methodName][
-                                                'args']
+                argsInfo = classMap[className]['methods'][methodName]['args']
 
                 reflectArgsPassedSeparated(globalStore, 
                                            callerObjName, 
