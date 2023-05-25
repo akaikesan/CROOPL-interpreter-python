@@ -368,7 +368,10 @@ def yacc_test():
 
     while(1):
         time.sleep(2)
-        print(globalStore)
+        for k in globalStore.keys():
+            if k != '#Store':
+                print(k)
+                print(globalStore[k])
         pass
 
 

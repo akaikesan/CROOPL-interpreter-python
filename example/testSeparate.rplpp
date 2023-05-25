@@ -21,15 +21,11 @@ class Fib
         new separate Fib g
         call g::init()
         call g::minus(x)
+        print(x)
+        x -= 3
         new separate Fib f
     
     method minus(int x)
         xs[1] -= 1 / 100 + 1
         x += xs[1]
-
-    method shiftLeft()
-        xs[0] += xs[1] + 1
-  
-
-     method get (int out)
-        out ^= xs[1]
+        print(x)

@@ -31,6 +31,23 @@ def assignVarAndGetDictByAddress(dic, p, varName, value, sep="/"):
             _(dic.get(lis[0], {}), lis[1:], sep)
     _(dic, lis, sep=sep)
 
+
+
+def reflectArgsAndGetDictByAddress(dic, p, result, sep="/"):
+    lis = p.split(sep)
+    def _(dic, lis, result, sep, default):
+        if len(lis) == 0:
+            return 
+        if len(lis) == 1:
+            for k in result.keys():
+                dic[lis[0]][k] = result[k]
+        else:
+            _(dic.get(lis[0], {}), lis[1:], result ,sep, default)
+    _(dic, lis, result, sep=sep, default=None)
+    return dic
+
+
+
 def storeCycle(q, globalStore):
 
     print("store Is Available")
@@ -48,6 +65,37 @@ def storeCycle(q, globalStore):
 
         if q.qsize() != 0:
             request = q.get()
+
+            if(len(request) == 7):
+                if (request[0] == "reflectArgsPassedSeparated"):
+                    print("reflectArgsPassedSeparated")
+
+                    # object that called
+                    callerObjName = request[1]
+                    # object that is called
+                    calledObjName = request[2]  
+                    argsInfo = request[3] 
+                    passedArgs = request[4] 
+                    dictAddress = request[5] 
+                    
+                    tmpCaller = globalStore[callerObjName]
+                    tmpCaller = { callerObjName : tmpCaller}
+
+                    tmpThis = globalStore[calledObjName]
+                    result = {} 
+                    for i, a in enumerate(argsInfo):
+                        result[passedArgs[i]] = globalStore[calledObjName][a['name']]
+                        tmpThis.pop(a['name'])
+
+
+
+                    # must be synchronized
+
+                    globalStore[calledObjName] = tmpThis
+                    globalStore[callerObjName] = reflectArgsAndGetDictByAddress(tmpCaller, dictAddress, result)[callerObjName]
+                print('send')
+                request[6].send('signal')
+                
 
             if(len(request) == 5):
 
@@ -122,6 +170,7 @@ def storeCycle(q, globalStore):
 
                 print('send')
                 request[3].send('signal')
+                
 
 
         time.sleep(0.1)

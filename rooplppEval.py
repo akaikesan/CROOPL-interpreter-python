@@ -4,7 +4,7 @@ import time
 
 # Storeはfオブジェクトを使いたい場合、{, f:{}, ...} の形でevalStatementに渡す。
 
-def refrectArgsAndGetDictByAddress(dic, p, result, sep="/"):
+def reflectArgsAndGetDictByAddress(dic, p, result, sep="/"):
     lis = p.split(sep)
     def _(dic, lis, result, sep, default):
         if len(lis) == 0:
@@ -50,6 +50,19 @@ def assignVarAndGetDictByAddress(dic, p, varName, value, sep="/"):
     _(dic, lis, sep=sep)
 
 
+def reflectArgsPassedSeparated(globalStore, callerObjName, objName, argsInfo, args, dictAddress):
+
+    q = globalStore['#Store']
+
+    parent_conn, child_conn = mp.Pipe()
+    q.put(['reflectArgsPassedSeparated', callerObjName, objName, argsInfo, args, dictAddress, child_conn])
+
+    parent_conn.recv()
+    print('args reflected by path') 
+
+
+
+
 def updateGlobalStoreByPath(globalStore, storePath, varName, value):
 
     q = globalStore['#Store']
@@ -59,19 +72,6 @@ def updateGlobalStoreByPath(globalStore, storePath, varName, value):
 
     parent_conn.recv()
     print('store updated by path') 
-
-
-    """
-    tmpCaller = globalStore[callerObjName]
-    copyGlobalStore = { callerObjName : tmpCaller}
-
-    assignVarAndGetDictByAddress(copyGlobalStore, 
-                                 storePath, 
-                                 varName, 
-                                 value)
-
-    globalStore[callerObjName] = copyGlobalStore[callerObjName]
-    """
 
 
 
@@ -96,7 +96,7 @@ def deleteVarGlobalStore(globalStore, envObjName, id1):
     q.put(['delete', envObjName, id1, child_conn])
 
     parent_conn.recv()
-    print('store deleted by path') 
+    print('store deleted') 
 
 
 def getValueByPath(dic, p, varName, sep="/"):
@@ -522,8 +522,6 @@ def evalStatement(classMap,
             else:
                 # +=, -=, ^=, !=, &=  etc...
                 if localStore is None: 
-                    print(globalStore[envObjName])
-                    print(statement)
                     result = getAssignmentResult(statement[1],
                                              invert,
                                              globalStore[envObjName][statement[2][0]],
@@ -537,11 +535,14 @@ def evalStatement(classMap,
                                              evalExp(getLocalStore(globalStore, storePath), statement[3])
                                              )
                 if localStore is None: 
+                    print(statement)
                     updateGlobalStore(globalStore, 
                                       envObjName, 
                                       statement[2][0], 
                                       result
                                       )
+                    print('after assignment')
+                    print(globalStore)
                 else:
 
                     updateGlobalStoreByPath(globalStore,storePath,statement[2][0], result)
@@ -926,6 +927,7 @@ def evalStatement(classMap,
                             raise Exception('arg name is already defined')
 
                         # 引数の値を一時的にオブジェクトの中に格納する
+
                         value = getValueByPath(globalStore, storePath, PassedArgs[i])
                         updateGlobalStoreByPath(globalStore, separatedObjName, a['name'], value)
                     else:
@@ -1024,13 +1026,22 @@ def evalStatement(classMap,
                 for i, k in enumerate(PassedArgs):
                     if localStore == None:
 
+                        
                         tmp = globalStore[envObjName]
+
                         if k in globalStore[envObjName].keys():
-                             tmp[k] = globalStore[envObjName][statement[1]][argsInfo[i]['name']]
-                             tmp[statement[1]].pop(argsInfo[i]['name'])
+                             tmp[k] = globalStore[
+                                     envObjName][
+                                             statement[1]][
+                                                     argsInfo[i]['name']
+                                                     ]
+                             tmp[statement[1]].pop(argsInfo[
+                                 i][
+                                     'name'])
 
                         # must be synchronized
                         globalStore[envObjName] = tmp  
+
                     else:
                         # use getLocalStore carefully. this is ok
                         locSt = getLocalStore(globalStore, storePath)
@@ -1337,22 +1348,20 @@ def interpreter(classMap,
                           className,
                           invert,
                           storePath)
-                argsInfo = classMap[className]['methods'][methodName]['args']
 
+                argsInfo = classMap[
+                        className][
+                                'methods'][
+                                        methodName][
+                                                'args']
 
-                tmpCaller = globalStore[callerObjName]
-                tmpCaller = { callerObjName : tmpCaller}
+                reflectArgsPassedSeparated(globalStore, 
+                                           callerObjName, 
+                                           objName, 
+                                           argsInfo, 
+                                           args, 
+                                           dictAddress)
 
-                tmpThis = globalStore[objName]
-                result = {} 
-
-                for i, a in enumerate(argsInfo):
-                    result[args[i]] = globalStore[objName][a['name']]
-                    tmpThis.pop(a['name'])
-
-                # must be synchronized
-                globalStore[objName] = tmpThis
-                globalStore[callerObjName] = refrectArgsAndGetDictByAddress(tmpCaller, dictAddress, result)[callerObjName]
                 print('send')
                 request[3].send('signal')
 
