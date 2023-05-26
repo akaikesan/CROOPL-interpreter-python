@@ -462,7 +462,7 @@ def evalStatement(classMap,
             else:
                 nameOfList = statement[2][0][0]
                 try:
-                    index = int(statement[2][0][1][0])
+                    index = evalExp( getLocalStore(globalStore, storePath),statement[2][0][1])
                 except:
                     raise Exception('you must input index integer for list. not String')
 
@@ -477,12 +477,17 @@ def evalStatement(classMap,
                             globalStore[envObjName][nameOfList][index],
                             evalExp(globalStore[envObjName], statement[3])
                     )
+                    """
                     updateGlobalStore(
                             globalStore, 
                             envObjName, 
                             statement[2][0], 
                             result
                     )
+                    """
+                    
+
+                    updateGlobalStoreByPath(globalStore,storePath,statement[2][0], result)
                 else:
 
                     leftContent = getValueByPath(globalStore, storePath, statement[2][0])
@@ -556,14 +561,11 @@ def evalStatement(classMap,
                                              evalExp(getLocalStore(globalStore, storePath), statement[3])
                                              )
                 if localStore is None: 
-                    print(statement)
                     updateGlobalStore(globalStore, 
                                       envObjName, 
                                       statement[2][0], 
                                       result
                                       )
-                    print('after assignment')
-                    print(globalStore)
                 else:
 
                     updateGlobalStoreByPath(globalStore,storePath,statement[2][0], result)
@@ -919,10 +921,12 @@ def evalStatement(classMap,
                         if a['name'] in globalStore[separatedObjName].keys():
                             raise Exception('arg name is already defined')
 
+                        value = getValueByPath(globalStore, storePath, PassedArgs[i])
+
                         updateGlobalStore(globalStore,
                                           separatedObjName, 
                                           a['name'], 
-                                          globalStore[envObjName][PassedArgs[i]])
+                                          value)
                     else:
                         if a['name'] in globalStore[envObjName][statement[1]].keys():
                             raise Exception('arg name is already defined')

@@ -1,5 +1,6 @@
 import multiprocessing as mp
 import time
+from rooplppEval import evalExp, getLocalStore, getValueByPath
 
 
 def popVarOfDict(dic, p, varName, sep="/"):
@@ -23,7 +24,7 @@ def assignVarAndGetDictByAddress(dic, p, varName, value, sep="/"):
             return 
         if len(lis) == 1:
             if isinstance(varName, list):
-                index = int(varName[1][0])
+                index = evalExp(dic[lis[0]],varName[1])
                 dic[lis[0]][varName[0]][index] = value
             else:
                 dic[lis[0]][varName] = value 
@@ -76,7 +77,7 @@ def storeCycle(q, globalStore):
                     calledObjName = request[2]  
                     argsInfo = request[3] 
                     passedArgs = request[4] 
-                    dictAddress = request[5] 
+                    callerDictAddress = request[5] 
                     
                     tmpCaller = globalStore[callerObjName]
                     tmpCaller = { callerObjName : tmpCaller}
@@ -84,15 +85,34 @@ def storeCycle(q, globalStore):
                     tmpThis = globalStore[calledObjName]
                     result = {} 
                     for i, a in enumerate(argsInfo):
-                        result[passedArgs[i]] = globalStore[calledObjName][a['name']]
+                        if isinstance(passedArgs[i], list):
+
+                            index = evalExp(getLocalStore(globalStore,
+                                                          callerDictAddress),
+                                            passedArgs[i][1])
+
+                            # copy value of arg before Passed
+                            result[passedArgs[i][0]] = getValueByPath(globalStore, 
+                                                                      callerDictAddress,
+                                                                      passedArgs[i][0]
+                                                                      )
+
+                            # reflect value of after Passed and used 
+                            result[passedArgs[i][0]][index] = getValueByPath(globalStore, 
+                                                                      calledObjName,
+                                                                     a['name'] 
+                                                                      )
+                        else:
+                            result[passedArgs[i]] = globalStore[calledObjName][a['name']]
                         tmpThis.pop(a['name'])
+
 
 
 
                     # must be synchronized
 
                     globalStore[calledObjName] = tmpThis
-                    globalStore[callerObjName] = reflectArgsAndGetDictByAddress(tmpCaller, dictAddress, result)[callerObjName]
+                    globalStore[callerObjName] = reflectArgsAndGetDictByAddress(tmpCaller, callerDictAddress, result)[callerObjName]
                 print('send')
                 request[6].send('signal')
 
@@ -132,6 +152,7 @@ def storeCycle(q, globalStore):
                     if isinstance(varName, list):
                         proxy = globalStore[objName]
                         try:
+                            print(varName[1][0])
                             index = int(varName[1][0])
                         except:
                             raise Exception('List index must be int')

@@ -1,0 +1,49 @@
+class Program
+    Producer p1
+    Producer p2
+    Buffer b
+
+    method main()
+        new separate Producer p1
+        new separate Buffer b 
+        call b::init()
+        call p1::init()
+
+        call p1::produce(b)
+
+class Producer 
+    int[] products 
+    int isnotFull
+    
+    method init()
+        new int[2] products
+        products[0] += 100
+        products[1] += 101
+
+    method checkBuffer(Buffer b)
+        call b::checkEmpty(isnotFull)
+
+    method produce(Buffer b)
+        call b::put(products[0])
+
+
+
+class Buffer 
+    int[] buffer 
+    int length
+    
+    method init()
+        new int[2] buffer 
+
+    method checkEmpty(int result)
+        if length = 0 then
+            result ^= 1
+        else
+            result ^= 0
+        fi length = 0
+    
+    method put(int i)
+        require length < 2  // request queue に 
+        buffer[length]  += i
+        length += 1
+        ensure length > 0

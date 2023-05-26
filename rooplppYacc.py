@@ -114,8 +114,13 @@ def p_methods(p):
 def p_method(p):
     '''
     method : METHOD ID  LPAREN varDecCommas RPAREN  statements
+    method : METHOD ID  LPAREN varDecCommas RPAREN REQUIRE exp statements ENSURE exp
     '''
-    p[0] = {"methodName": p[2], "args": p[4], "statements": p[6] }
+    if len(p) == 7:
+        p[0] = {"methodName": p[2], "args": p[4], "statements": p[6] }
+    elif len(p) == 11:
+        p[0] = {"methodName": p[2], "args": p[4], "statements": p[8], "require": p[7], "ensure": p[10] }
+
 
 def p_varDecCommas(p):
     '''
@@ -368,11 +373,13 @@ def yacc_test():
 
     while(1):
         time.sleep(2)
+
+        print('-------------------------------')
         for k in globalStore.keys():
             if k != '#Store':
-                print(k)
+                print('$ ' + k + ' $')
                 print(globalStore[k])
-        pass
+        print('-------------------------------')
 
 
 
@@ -381,3 +388,15 @@ if __name__ == '__main__':
     mp.set_start_method('spawn', True)
     yacc_test()
 
+
+"""
+1. はじめに
+2. CROOPLPP {構文と動作意味 例:fib 
+    2-1 構文
+    2-2 動作意味
+    2-3 例 fib
+3. 並行動作モデル(これに従って4の処理系を作ってます, 色々考えた絵のような説明をする)
+    SCOOP {separate, プロセス(request queue, 引数によるロック)
+4. 処理系と例 {detachable/attached, 例:Prod-Cons
+5. 終わりに
+"""

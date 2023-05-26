@@ -36,6 +36,8 @@ tokens = (
     'CLASS',
     'INHERITS',
     'METHOD',
+    'REQUIRE',
+    'ENSURE',
     'CALL',
     'UNCALL',
     'CONSTRUCT',
@@ -99,6 +101,8 @@ reserved = {
     'else': 'ELSE',
     'while': 'WHILE',
     'method': 'METHOD',
+    'require': 'REQUIRE',
+    'ensure': 'ENSURE',
     'int': 'INT',
     'call': 'CALL',
     'uncall': 'UNCALL',
@@ -198,6 +202,8 @@ t_COPY= 'copy'
 t_PRINT = 'print'
 t_COMMA = ','
 t_METHOD = 'method'
+t_REQUIRE= 'require'
+t_ENSURE= 'ensure'
 t_COLON = ':'
 t_WCOLON = '::'
 t_ADD = r'\+'
@@ -229,8 +235,6 @@ t_ignore = ' \t'
 # A regular expression rule with some action code
 
 
-
-# Define a rule so we can track line numbers
 
 
 def t_newline(t):
