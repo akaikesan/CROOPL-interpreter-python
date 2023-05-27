@@ -37,8 +37,10 @@ class Producer
           until x = prodNum
         delocal int x = prodNum
 
-    method produce(Buffer detachable b)
-        call b::put(products[0])
+    method produce(Buffer detachable buf)
+        // ここでputがdetachableだと、produceが終了し、bufが消える。
+        // attachedだと、putが終わるまでbufが残る。
+        call buf::put(products[0])
 
 
 
@@ -49,7 +51,7 @@ class Buffer
     method init()
         new int[2] buffer 
 
-    method put(int detachable i)
+    method put(int i)
         require length < 2  // request queue に 
           buffer[length]  <=> i
           length += 1

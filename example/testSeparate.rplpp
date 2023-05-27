@@ -5,7 +5,7 @@ class Program
     method main()
         new Fib f
         call f::init()
-        x += 123
+        x += 1
         call f::initSeparate(x)
 
 
@@ -25,6 +25,7 @@ class Fib
         x -= 3
 
     method minus(int x)
-        xs[1] -= 1 / 100 + 1
+        xs[1] -= 1
+        print(xs[1])
         x += xs[1]
         print(x)

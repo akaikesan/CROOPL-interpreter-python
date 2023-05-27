@@ -18,6 +18,16 @@ def reflectArgsAndGetDictByAddress(dic, p, result, sep="/"):
     return dic
 
 
+def passArgs(globalStore, argsInfo, passedArgs,storePath, envObjName):
+
+    for i, a in enumerate(argsInfo):
+        separatedObjName = getValueByPath(globalStore, storePath, envObjName)
+        if a['name'] in globalStore[separatedObjName].keys():
+            raise Exception('arg name is already defined')
+
+        value = getValueByPath(globalStore, storePath, passedArgs[i])
+        updateGlobalStoreByPath(globalStore, separatedObjName, a['name'], value)
+
 
 def popVarOfDict(dic, p, varName, sep="/"):
     lis = p.split(sep)
@@ -475,6 +485,7 @@ def evalStatement(classMap,
 
                 if localStore is None: 
 
+
                     if not isinstance(globalStore[envObjName][nameOfList], list):
                         raise Exception("List is not Initialized")
 
@@ -484,9 +495,9 @@ def evalStatement(classMap,
                             globalStore[envObjName][nameOfList][index],
                             evalExp(globalStore[envObjName], statement[3])
                     )
-
                     updateGlobalStoreByPath(globalStore,storePath,statement[2][0], result)
                 else:
+
 
                     leftContent = getValueByPath(globalStore, storePath, statement[2][0])
 
@@ -547,9 +558,6 @@ def evalStatement(classMap,
                 # +=, -=, ^=, !=, &=  etc...
                 if localStore is None: 
 
-                    print(globalStore)
-                    print(envObjName)
-                    print(statement)
                     result = getAssignmentResult(statement[1],
                                              invert,
                                              globalStore[envObjName][statement[2][0]],
@@ -906,31 +914,7 @@ def evalStatement(classMap,
             else:
                 haveAttachedArg = True 
 
-            
-            # pass Arguments
             for i, a in enumerate(argsInfo):
-                # ex) args =  [{'name': 'a', 'type': 'int'}, {'name': 'b', 'type': 'int'}]
-
-                if callerIsSeparated:
-                    separatedObjName = getValueByPath(globalStore, storePath, statement[1])
-                    if a['name'] in globalStore[separatedObjName].keys():
-                        raise Exception('arg name is already defined')
-
-                    value = getValueByPath(globalStore, storePath, PassedArgs[i])
-                    updateGlobalStoreByPath(globalStore, separatedObjName, a['name'], value)
-
-                else:
-                    obj = getValueByPath(globalStore, storePath, statement[1])
-                    assert isinstance(obj, dict)
-                    if a['name'] in obj.keys():
-                        raise Exception('arg name is already defined')
-                    
-                    storePathToPass = storePath + '/' + statement[1]
-
-                    argContent = getValueByPath(globalStore, storePath, PassedArgs[i])
-                    updateGlobalStoreByPath(globalStore, storePathToPass, a['name'], argContent)
-    
-
                 if type(a['type']) is list and a['type'][1] == 'detachable':
                     haveAttachedArg = False 
 
@@ -938,7 +922,8 @@ def evalStatement(classMap,
 
                 # you are calling method of separated object
                 # push to Queue, return.
-                # TODO check args is attached
+
+
                 q = globalStore[callerObjGlobalName]['#q']
                 time.sleep(0.001)
 
@@ -948,11 +933,12 @@ def evalStatement(classMap,
 
                 if haveAttachedArg:
                     parent_conn, child_conn = mp.Pipe()
-                    q.put([statement[2], statement[3], callUncall, child_conn, storePathToPass])
+                    q.put([statement[2], statement[3], callUncall, storePathToPass, argsInfo, PassedArgs, storePath, statement[1], child_conn])
                     parent_conn.recv()
                     #print('received')
                 else:
-                    q.put([statement[2], statement[3], callUncall, storePathToPass])
+                    q.put([statement[2], statement[3], callUncall, storePathToPass, argsInfo, PassedArgs, storePath, statement[1]])
+
             else:
                 # not-separated object's method call. 
 
@@ -962,6 +948,19 @@ def evalStatement(classMap,
                     pass
 
 
+                # pass arguments
+                for i, a in enumerate(argsInfo):
+                    obj = getValueByPath(globalStore, storePath, statement[1])
+                    assert isinstance(obj, dict)
+                    if a['name'] in obj.keys():
+                        raise Exception('arg name is already defined')
+                    
+                    storePathToPass = storePath + '/' + statement[1]
+
+                    argContent = getValueByPath(globalStore, storePath, PassedArgs[i])
+                    updateGlobalStoreByPath(globalStore, storePathToPass, a['name'], argContent)
+
+    
 
 
                 if  localStore == None:
@@ -1280,7 +1279,7 @@ def interpreter(classMap,
     global ProcessRefCounter 
     ProcessRefCounter = 0
 
-    storePath =  objName
+    storePathWhenEval =  objName
 
     while(True):
         
@@ -1295,11 +1294,8 @@ def interpreter(classMap,
 
             # sort Request Elements
             request = q.get()
-            methodName = request[0]
-            args = request[1]
-            callORuncall = request[2]
 
-            if len(request) == 3:
+            if len(request) == 2:
 
                 if not evalExp(globalStore[ProcessObjName], request[1]):
                     q.put(request)
@@ -1316,12 +1312,22 @@ def interpreter(classMap,
                 # print('send')
                 request[2].send('signal')
 
-            elif len(request) == 5:
+            elif len(request) == 9:
 
-                callerReference = request[4]
+
+                methodName = request[0]
+                args = request[1]
+                callORuncall = request[2]
+                callerReference = request[3]
+                argsInfo = request[4]
+                PassedArgs = request[5]
+                storePath = request[6]
+                callerEnv = request[7] 
                 l = callerReference.split('/')
                 callerObjName = l[0]
                 dictAddress = '/'.join(l[:-1])
+
+
 
                 if 'require' in classMap[className]['methods'][methodName].keys():
                     requireExp = classMap[className]['methods'][methodName]['require']
@@ -1331,9 +1337,11 @@ def interpreter(classMap,
                         requireExp, ensureExp = ensureExp, requireExp
 
                     if not evalExp(globalStore[ProcessObjName], requireExp):
-                        print('wait require attached')
+                        # print('wait require attached')
                         q.put(request)
                         continue
+
+                passArgs(globalStore, argsInfo, PassedArgs, storePath, callerEnv)
 
                 # attached object's call
                 startStatement = [callORuncall,
@@ -1345,7 +1353,7 @@ def interpreter(classMap,
                           objName,
                           className,
                           invert,
-                          storePath)
+                          storePathWhenEval)
 
                 argsInfo = classMap[className]['methods'][methodName]['args']
 
@@ -1369,16 +1377,24 @@ def interpreter(classMap,
 
                     if not evalExp(globalStore[ProcessObjName], ensureExp):
                         request = ['waitEnsure', ensureExp, request[3]]
-                        print('wait ensure attached')
+                        # print('wait ensure attached')
                         q.put(request)
                         continue
 
+                request[-1].send('signal')
                 # print('send')
-                request[3].send('signal')
 
 
-            else:
+            elif len(request) == 8:
+
+                methodName = request[0]
+                args = request[1]
+                callORuncall = request[2]
                 callerReference = request[3]
+                argsInfo = request[4]
+                PassedArgs = request[5]
+                storePath = request[6]
+                callerEnv = request[7] 
                 l = callerReference.split('/')
                 callerObjName = l[0]
                 dictAddress = '/'.join(l[:-1])
@@ -1392,10 +1408,14 @@ def interpreter(classMap,
                         requireExp, ensureExp = ensureExp, requireExp
 
                     if not evalExp(globalStore[ProcessObjName], requireExp):
-                        # print('wait require detachable')
-                        # print(requireExp)
                         q.put(request)
                         continue
+
+                    
+
+                passArgs(globalStore, argsInfo, PassedArgs, storePath, callerEnv)
+
+
 
                 # detachable object's call
                 startStatement = [callORuncall,
@@ -1407,7 +1427,7 @@ def interpreter(classMap,
                           objName,
                           className,
                           invert,
-                          storePath)
+                          storePathWhenEval)
 
                 argsInfo = classMap[className]['methods'][methodName]['args']
 
@@ -1433,6 +1453,33 @@ def interpreter(classMap,
 
                     if not evalExp(globalStore[ProcessObjName], ensureExp):
                         request = ['waitEnsure', ensureExp]
-                        print('wait ensure detachable')
+                        # print('wait ensure detachable')
                         q.put(request)
                         continue
+
+            elif len(request) == 4:
+
+                methodName = request[0]
+                args = request[1]
+                callORuncall = request[2]
+                callerReference = request[3]
+                l = callerReference.split('/')
+                callerObjName = l[0]
+                dictAddress = '/'.join(l[:-1])
+
+
+
+                # detachable object's call
+                startStatement = [callORuncall,
+                                  methodName,
+                                  args]
+                evalStatement(classMap,
+                          startStatement,
+                          globalStore,
+                          objName,
+                          className,
+                          invert,
+                          storePathWhenEval)
+
+
+
