@@ -261,7 +261,7 @@ def makeSeparatedProcess(classMap,
         ProcDict[varName] = p
 
 
-    time.sleep(0.2)
+    time.sleep(0.001)
     p.start()
 
     return 
@@ -453,7 +453,8 @@ def evalStatement(classMap,
                     # list <=> var
                     if localStore == None:
                         # get Value
-                        tmp = globalStore[envObjName][statement[2][0][0]][int(statement[2][0][1][0])]
+                        index = evalExp( getLocalStore(globalStore, storePath), statement[2][0][1])
+                        tmp = globalStore[envObjName][statement[2][0][0]][index]
                         updateGlobalStore(globalStore, envObjName, statement[2][0], globalStore[envObjName][statement[3][0]])
                         updateGlobalStore(globalStore, envObjName, statement[3][0],tmp)
                     else:
@@ -974,7 +975,7 @@ def evalStatement(classMap,
                 # push to Queue, return.
                 # TODO check args is attached
                 q = globalStore[callerObjGlobalName]['#q']
-                time.sleep(0.1)
+                time.sleep(0.001)
 
                 callUncall = callOrUncall(invert, statement[0])
 
@@ -1340,6 +1341,14 @@ def interpreter(classMap,
                 callerObjName = l[0]
                 dictAddress = '/'.join(l[:-1])
 
+                if 'require' in classMap[className]['methods'][methodName].keys():
+                    requireExp = classMap[className]['methods'][methodName]['require']
+
+                    ensureExp = classMap[className]['methods'][methodName]['ensure']
+                    print(callORuncall)
+                    print(requireExp)
+                    print(ensureExp)
+
                 # attached object's call
                 startStatement = [callORuncall,
                                   methodName,
@@ -1361,6 +1370,8 @@ def interpreter(classMap,
                                            args, 
                                            dictAddress)
 
+
+
                 # print('send')
                 request[3].send('signal')
 
@@ -1370,6 +1381,13 @@ def interpreter(classMap,
                 l = callerReference.split('/')
                 callerObjName = l[0]
                 dictAddress = '/'.join(l[:-1])
+
+                if 'require' in classMap[className]['methods'][methodName].keys():
+                    requireExp = classMap[className]['methods'][methodName]['require']
+
+                    ensureExp = classMap[className]['methods'][methodName]['ensure']
+                    print(requireExp)
+                    print(ensureExp)
 
 
                 # detachable object's call

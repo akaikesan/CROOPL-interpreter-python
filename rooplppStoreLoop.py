@@ -157,10 +157,7 @@ def storeCycle(q, globalStore):
 
                     if isinstance(varName, list):
                         proxy = globalStore[objName]
-                        try:
-                            index = int(varName[1][0])
-                        except:
-                            raise Exception('List index must be int')
+                        index = evalExp(proxy,varName[1])
                         proxy[varName[0]][index] = value
                         globalStore[objName] = proxy
                     else:
@@ -233,5 +230,5 @@ def makeSeparatedStore( globalStore, m):
     globalStore['#Store'] = q
     p = mp.Process(target =  storeCycle, args = (q, globalStore))
 
-    time.sleep(0.2)
+    time.sleep(0.001)
     p.start()

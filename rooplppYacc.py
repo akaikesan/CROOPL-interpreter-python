@@ -106,6 +106,9 @@ def p_methods(p):
                 "statements":p[2]["statements"],
                 "args": p[2]["args"]
                 }
+        if "require" in p[2]:
+            methods[p[2]["methodName"]]["require"] = p[2]["require"]
+            methods[p[2]["methodName"]]["ensure"] = p[2]["ensure"]
         p[0] = methods
     else:
         p[0] = {}
@@ -395,7 +398,7 @@ if __name__ == '__main__':
     2-1 構文
     2-2 動作意味
     2-3 例 fib
-3. 並行動作モデル(これに従って4の処理系を作ってます, 色々考えた絵のような説明をする)
+3. 並行動作モデル(これに従って4の処理系を作ってます, 色々考えた絵のような説明をする.)
     SCOOP {separate, プロセス(request queue, 引数によるロック)
 4. 処理系と例 {detachable/attached, 例:Prod-Cons
 5. 終わりに

@@ -15,8 +15,7 @@ class Program
         call p1::produce(b)
 
         call p2::init()
-        call p2::generate()
-        call p2::produce(b)
+        uncall p2::produce(b)
 
 
 
@@ -53,6 +52,6 @@ class Buffer
 
     method put(int i)
         require length < 2  // request queue に 
-          buffer[length]  += i
+          buffer[length]  <=> i
           length += 1
         ensure length > 0
