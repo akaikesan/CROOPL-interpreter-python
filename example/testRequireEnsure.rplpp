@@ -1,7 +1,7 @@
 class Program
     Producer p1
     Producer p2
-    Buffer b
+    Buffer detachable b
 
     method main()
         new separate Producer p1
@@ -12,10 +12,12 @@ class Program
 
         call p1::init()
         call p1::generate()
-        call p1::produce(b)
 
         call p2::init()
+
         uncall p2::produce(b)
+
+        call p1::produce(b)
 
 
 
@@ -35,10 +37,7 @@ class Producer
           until x = prodNum
         delocal int x = prodNum
 
-    method checkBuffer(Buffer b)
-        call b::checkEmpty(isnotFull)
-
-    method produce(Buffer b)
+    method produce(Buffer detachable b)
         call b::put(products[0])
 
 
@@ -50,7 +49,7 @@ class Buffer
     method init()
         new int[2] buffer 
 
-    method put(int i)
+    method put(int detachable i)
         require length < 2  // request queue に 
           buffer[length]  <=> i
           length += 1
