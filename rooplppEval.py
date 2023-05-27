@@ -61,7 +61,7 @@ def reflectArgsPassedSeparated(globalStore, callerObjName, objName, argsInfo, ar
     q.put(['reflectArgsPassedSeparated', callerObjName, objName, argsInfo, args, dictAddress, child_conn])
 
     parent_conn.recv()
-    print('args reflected by path') 
+    # print('args reflected by path') 
 
 
 
@@ -78,7 +78,7 @@ def reflectArgsPassed(globalStore, envObjName, calledObjName, argsInfo, passedAr
 
 
     parent_conn.recv()
-    print('args reflected') 
+    # print('args reflected') 
 
 
 
@@ -92,7 +92,7 @@ def updateGlobalStoreByPath(globalStore, storePath, varName, value):
     q.put(['updatePath', storePath, varName, value, child_conn])
 
     parent_conn.recv()
-    print('store updated by path') 
+    # print('store updated by path') 
 
 
 
@@ -105,7 +105,7 @@ def deleteVarGlobalStoreByPath(globalStore, storePath, varName):
     q.put(['deletePath', storePath, varName, child_conn])
 
     parent_conn.recv()
-    print('store deleted by path') 
+    # print('store deleted by path') 
 
 
 
@@ -117,7 +117,7 @@ def deleteVarGlobalStore(globalStore, envObjName, id1):
     q.put(['delete', envObjName, id1, child_conn])
 
     parent_conn.recv()
-    print('store deleted') 
+    # print('store deleted') 
 
 
 def getValueByPath(dic, p, varName, sep="/"):
@@ -151,15 +151,21 @@ def getLocalStore(dic, p, sep="/"):
 
 
 
-def makeStore(classMap, className):
+def makeStore(globalStore, storePath, classMap, className):
 
     st = {}
 
     if isinstance(className, list):  # Array
+
+
+        index = evalExp(getLocalStore(globalStore, storePath), className[0][1])
+        assert isinstance(index, int)
+        
         if className[0][0] == 'int':
-            st = [0] * int(className[0][1][0])
+
+            st = [0] * int(index)
         else:
-            st = [{}] * int(className[0][1][0])
+            st = [{}] * int(index)
 
     else:
         for f in classMap[className]['fields'].keys():
@@ -222,7 +228,7 @@ def makeSeparatedProcess(classMap,
                          globalStore
                          ):
 
-    print("making Process")
+    # print("making Process")
     global m
     if varName == 'program':
         m = mp.Manager()
@@ -303,7 +309,7 @@ def updateGlobalStore(globalStore, objName, varName, value):
     q.put(['update', objName, varName, value, child_conn])
 
     parent_conn.recv()
-    print('store updated') 
+    # print('store updated') 
 
 
 
@@ -477,15 +483,6 @@ def evalStatement(classMap,
                             globalStore[envObjName][nameOfList][index],
                             evalExp(globalStore[envObjName], statement[3])
                     )
-                    """
-                    updateGlobalStore(
-                            globalStore, 
-                            envObjName, 
-                            statement[2][0], 
-                            result
-                    )
-                    """
-                    
 
                     updateGlobalStoreByPath(globalStore,storePath,statement[2][0], result)
                 else:
@@ -661,9 +658,9 @@ def evalStatement(classMap,
                     updateGlobalStore(globalStore,
                                       envObjName,
                                       statement[2][0], 
-                                      makeStore(classMap, statement[1]))
+                                      makeStore(globalStore, storePath, classMap, statement[1]))
                 else:
-                    updateGlobalStoreByPath(globalStore,storePath,statement[2][0], makeStore(classMap, statement[1]))
+                    updateGlobalStoreByPath(globalStore,storePath,statement[2][0], makeStore(globalStore, storePath,classMap, statement[1]))
             else: 
                 # new object
                 if len(statement) == 4: 
@@ -703,10 +700,10 @@ def evalStatement(classMap,
                         updateGlobalStore(globalStore,
                                           envObjName,
                                           statement[2][0],
-                                          makeStore(classMap, statement[1])
+                                          makeStore(globalStore, storePath, classMap, statement[1])
                                           )
                     else:
-                        updateGlobalStoreByPath(globalStore,storePath,statement[2][0], makeStore(classMap, statement[1]))
+                        updateGlobalStoreByPath(globalStore,storePath,statement[2][0], makeStore(globalStore, storePath, classMap, statement[1]))
 
 
     elif (statement[0] == 'delete'):
@@ -716,9 +713,9 @@ def evalStatement(classMap,
             if isinstance(statement[1], list): 
                 # new list
                 if localStore == None:
-                    updateGlobalStore(globalStore, envObjName, statement[2][0], makeStore(classMap, statement[1]))
+                    updateGlobalStore(globalStore, envObjName, statement[2][0], makeStore(globalStore, storePath, classMap, statement[1]))
                 else:
-                    updateGlobalStoreByPath(globalStore,storePath,statement[2][0], makeStore(classMap, statement[1]))
+                    updateGlobalStoreByPath(globalStore,storePath,statement[2][0], makeStore(globalStore, storePath, classMap, statement[1]))
             else: 
                 # new object
                 if len(statement) == 4: 
@@ -758,11 +755,11 @@ def evalStatement(classMap,
                         updateGlobalStore(globalStore,
                                           envObjName,
                                           statement[2][0],
-                                          makeStore(classMap, statement[1])
+                                          makeStore(globalStore, storePath, classMap, statement[1])
                                           )
                     else:
 
-                        updateGlobalStoreByPath(globalStore,storePath,statement[2][0], makeStore(classMap, statement[1]))
+                        updateGlobalStoreByPath(globalStore,storePath,statement[2][0], makeStore(globalStore, storePath, classMap, statement[1]))
 
         else:
             # delete (inverted new)
@@ -899,13 +896,10 @@ def evalStatement(classMap,
                 callerIsSeparated = False
 
 
-            """
             if len(PassedArgs) == 0:
                 haveAttachedArg = False
             else:
                 haveAttachedArg = True 
-            """
-            haveAttachedArg = True 
 
             
             # pass Arguments
@@ -971,7 +965,7 @@ def evalStatement(classMap,
                         
     
 
-                if type(a['type']) is list and  a['type'][1] == 'detachable':
+                if type(a['type']) is list and a['type'][1] == 'detachable':
                     haveAttachedArg = False 
 
             if callerIsSeparated: 
@@ -988,12 +982,10 @@ def evalStatement(classMap,
 
                 if haveAttachedArg:
                     parent_conn, child_conn = mp.Pipe()
-                    q.put([statement[2], statement[3], callUncall,
-                           child_conn, storePathToPass])
+                    q.put([statement[2], statement[3], callUncall, child_conn, storePathToPass])
                     parent_conn.recv()
-                    print('received')
+                    #print('received')
                 else:
-                    print('detachable')
                     q.put([statement[2], statement[3], callUncall, storePathToPass])
             else:
                 # not-separated object's method call. 
@@ -1177,7 +1169,6 @@ def evalStatement(classMap,
         # initially, e1 is true.
         # e1 -> s1 -> e2 -> s2 -> e1
         while result_e1:  # e1  e2
-
             for s in s1:  # s1  s1
                 evalStatement(classMap, 
                               s, 
@@ -1193,23 +1184,25 @@ def evalStatement(classMap,
             else:
                 result_e2 = evalExp(getLocalStore(globalStore, storePath), e2)
 
+
             if result_e2:  # e2 e1
                 break
             else:
+
                 if invert:
                     stmts = reversed(s2)
                 else:
                     stmts = s2
 
-                for s in reversed(s2):
-                    evalStatement(classMap, 
-                          s, 
-                          globalStore, 
-                          envObjName, 
-                          thisType,
-                          invert, 
-                          storePath,
-                          localStore)
+            for s in s2:
+                evalStatement(classMap, 
+                      s, 
+                      globalStore, 
+                      envObjName, 
+                      thisType,
+                      invert, 
+                      storePath,
+                      localStore)
 
 
             if localStore is None: 
@@ -1310,7 +1303,7 @@ def interpreter(classMap,
                 globalStore):
 
     invert = False
-    print("interpreter of " + className + ":"+objName + " start")
+    # print("interpreter of " + className + ":"+objName + " start")
 
     global ProcDict
     ProcDict = {}
@@ -1347,7 +1340,6 @@ def interpreter(classMap,
                 callerObjName = l[0]
                 dictAddress = '/'.join(l[:-1])
 
-
                 # attached object's call
                 startStatement = [callORuncall,
                                   methodName,
@@ -1369,16 +1361,21 @@ def interpreter(classMap,
                                            args, 
                                            dictAddress)
 
-                print('send')
+                # print('send')
                 request[3].send('signal')
 
+
             else:
-                # detachable object's call
                 callerReference = request[3]
+                l = callerReference.split('/')
+                callerObjName = l[0]
+                dictAddress = '/'.join(l[:-1])
+
+
+                # detachable object's call
                 startStatement = [callORuncall,
                                   methodName,
                                   args]
-                                  
                 evalStatement(classMap,
                           startStatement,
                           globalStore,
@@ -1386,3 +1383,17 @@ def interpreter(classMap,
                           className,
                           invert,
                           storePath)
+
+                argsInfo = classMap[className]['methods'][methodName]['args']
+
+                if (callerObjName == 'originProcess'):
+                    # originProcess has no Store.
+                    pass
+                else:
+                    reflectArgsPassedSeparated(globalStore, 
+                                               callerObjName, 
+                                               objName, 
+                                               argsInfo, 
+                                               args, 
+                                               dictAddress)
+

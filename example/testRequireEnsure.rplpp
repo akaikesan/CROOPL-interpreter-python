@@ -5,20 +5,36 @@ class Program
 
     method main()
         new separate Producer p1
+        new separate Producer p2
         new separate Buffer b 
-        call b::init()
-        call p1::init()
 
+        call b::init()
+
+        call p1::init()
+        call p1::generate()
         call p1::produce(b)
+
+        call p2::init()
+        call p2::generate()
+        call p2::produce(b)
+
+
 
 class Producer 
     int[] products 
-    int isnotFull
+    int prodNum
     
     method init()
-        new int[2] products
-        products[0] += 100
-        products[1] += 101
+        prodNum += 3
+        new int[prodNum] products
+
+    method generate()
+        local int x = 0
+          from x = 0 do skip loop
+            products[x] += x + 1
+            x += 1
+          until x = prodNum
+        delocal int x = prodNum
 
     method checkBuffer(Buffer b)
         call b::checkEmpty(isnotFull)
@@ -35,15 +51,8 @@ class Buffer
     method init()
         new int[2] buffer 
 
-    method checkEmpty(int result)
-        if length = 0 then
-            result ^= 1
-        else
-            result ^= 0
-        fi length = 0
-    
     method put(int i)
         require length < 2  // request queue に 
-        buffer[length]  += i
-        length += 1
+          buffer[length]  += i
+          length += 1
         ensure length > 0

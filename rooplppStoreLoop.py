@@ -34,7 +34,7 @@ def assignVarAndGetDictByAddress(dic, p, varName, value, sep="/"):
 
 
 
-def reflectArgsAndGetDictByAddress(dic, p, result, sep="/"):
+def reflectArgsAndGetDict(dic, p, result, sep="/"):
     lis = p.split(sep)
     def _(dic, lis, result, sep, default):
         if len(lis) == 0:
@@ -69,7 +69,7 @@ def storeCycle(q, globalStore):
 
             if(len(request) == 7):
                 if (request[0] == "reflectArgsPassedSeparated"):
-                    print("reflectArgsPassedSeparated")
+                    # print("reflectArgsPassedSeparated")
 
                     # object that called
                     callerObjName = request[1]
@@ -79,7 +79,11 @@ def storeCycle(q, globalStore):
                     passedArgs = request[4] 
                     callerDictAddress = request[5] 
                     
-                    tmpCaller = globalStore[callerObjName]
+                    try:
+                        tmpCaller = globalStore[callerObjName]
+                    except:
+                        raise Exception()
+
                     tmpCaller = { callerObjName : tmpCaller}
 
                     tmpThis = globalStore[calledObjName]
@@ -97,7 +101,7 @@ def storeCycle(q, globalStore):
                                                                       passedArgs[i][0]
                                                                       )
 
-                            # reflect value of after Passed and used 
+                            # reflect value of arg after Passed and changed
                             result[passedArgs[i][0]][index] = getValueByPath(globalStore, 
                                                                       calledObjName,
                                                                      a['name'] 
@@ -112,13 +116,15 @@ def storeCycle(q, globalStore):
                     # must be synchronized
 
                     globalStore[calledObjName] = tmpThis
-                    globalStore[callerObjName] = reflectArgsAndGetDictByAddress(tmpCaller, callerDictAddress, result)[callerObjName]
-                print('send')
+                    globalStore[callerObjName] = reflectArgsAndGetDict(tmpCaller,
+                                                                       callerDictAddress,
+                                                                       result)[callerObjName]
+                # print('send')
                 request[6].send('signal')
 
             if(len(request) == 6):
                 if (request[0] == "reflectArgsPassed"):
-                    print("reflectArgsPassed")
+                    # print("reflectArgsPassed")
 
                     # object that called
                     callerObjName = request[1]
@@ -137,7 +143,7 @@ def storeCycle(q, globalStore):
 
                         globalStore[callerObjName] = tmp  
                     
-                print('send')
+                # print('send')
                 request[5].send('signal')
                 
 
@@ -152,7 +158,6 @@ def storeCycle(q, globalStore):
                     if isinstance(varName, list):
                         proxy = globalStore[objName]
                         try:
-                            print(varName[1][0])
                             index = int(varName[1][0])
                         except:
                             raise Exception('List index must be int')
@@ -165,7 +170,7 @@ def storeCycle(q, globalStore):
 
                 if(request[0] == "updatePath"):
                     #updateByPath
-                    print("updateByPath")
+                    # print("updateByPath")
                     storePath = request[1]
                     varName = request[2]
                     value = request[3]
@@ -183,7 +188,7 @@ def storeCycle(q, globalStore):
 
                     globalStore[callerObjName] = copyGlobalStore[callerObjName]
 
-                print('send')
+                # print('send')
                 request[4].send('signal')
 
             elif(len(request) == 4):
@@ -201,7 +206,7 @@ def storeCycle(q, globalStore):
                     popVarOfDict(copyGlobalStore, storePath, varName)
 
                     globalStore[callerObjName] = copyGlobalStore[callerObjName]
-                    print('deleteByPath')
+                    # print('deleteByPath')
                 
 
                 elif(request[0] == "delete"):
@@ -213,7 +218,7 @@ def storeCycle(q, globalStore):
                     tmp.pop(id1)
                     globalStore[envObjName] = tmp
 
-                print('send')
+                # print('send')
                 request[3].send('signal')
                 
 
@@ -222,7 +227,7 @@ def storeCycle(q, globalStore):
 
 def makeSeparatedStore( globalStore, m):
 
-    print("making Store")
+    # print("making Store")
     q = m.Queue()
 
     globalStore['#Store'] = q
