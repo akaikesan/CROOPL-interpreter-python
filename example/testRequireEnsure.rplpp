@@ -3,10 +3,12 @@ class Program
     Producer p2
     Buffer detachable b
 
+
     method main()
         new separate Producer p1
         new separate Producer p2
         new separate Buffer b 
+
 
         call b::init()
 
@@ -15,6 +17,7 @@ class Program
 
         call p2::init()
 
+        // consume (detachable)
         uncall p2::produce(b)
 
         call p1::produce(b)
@@ -24,10 +27,12 @@ class Program
 class Producer 
     int[] products 
     int prodNum
+
     
     method init()
         prodNum += 3
         new int[prodNum] products
+
 
     method generate()
         local int x = 0
@@ -36,6 +41,7 @@ class Producer
             x += 1
           until x = prodNum
         delocal int x = prodNum
+
 
     method produce(Buffer detachable buf)
         // ここでputがdetachableだと、produceが終了し、bufが消える。
@@ -48,11 +54,12 @@ class Buffer
     int[] buffer 
     int length
     
+
     method init()
         new int[2] buffer 
 
     method put(int i)
-        require length < 2  // request queue に 
+        require length < 2
           buffer[length]  <=> i
           length += 1
         ensure length > 0

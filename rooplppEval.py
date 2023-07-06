@@ -107,6 +107,7 @@ def updateGlobalStoreByPath(globalStore, storePath, varName, value):
 
 
 
+
 def deleteVarGlobalStoreByPath(globalStore, storePath, varName):
 
     q = globalStore['#Store']
@@ -119,6 +120,8 @@ def deleteVarGlobalStoreByPath(globalStore, storePath, varName):
 
 
 
+
+
 def deleteVarGlobalStore(globalStore, envObjName, id1):
 
     q = globalStore['#Store']
@@ -128,6 +131,9 @@ def deleteVarGlobalStore(globalStore, envObjName, id1):
 
     parent_conn.recv()
     # print('store deleted') 
+
+
+
 
 
 def getValueByPath(dic, p, varName, sep="/"):
@@ -144,6 +150,9 @@ def getValueByPath(dic, p, varName, sep="/"):
         else:
             return _(dic.get(lis[0], {}), lis[1:], sep)
     return _(dic, lis, sep=sep)
+
+
+
 
 
 def getLocalStore(dic, p, sep="/"):
@@ -210,6 +219,8 @@ def callOrUncall(invert, callUncall):
             return 'uncall'
     else:
         raise Exception("callUncall must be call or uncall")
+
+
 
 
 
@@ -1313,6 +1324,7 @@ def interpreter(classMap,
                 request[2].send('signal')
 
             elif len(request) == 9:
+                # attached
 
 
                 methodName = request[0]
@@ -1381,11 +1393,14 @@ def interpreter(classMap,
                         q.put(request)
                         continue
 
+                
+
                 request[-1].send('signal')
                 # print('send')
 
 
             elif len(request) == 8:
+                # detachable
 
                 methodName = request[0]
                 args = request[1]
@@ -1444,6 +1459,7 @@ def interpreter(classMap,
 
 
                 if 'require' in classMap[className]['methods'][methodName].keys():
+                    print(classMap[className]['methods'][methodName].keys())
                     requireExp = classMap[className]['methods'][methodName]['require']
 
 
@@ -1483,3 +1499,7 @@ def interpreter(classMap,
 
 
 
+# 動機：各オブジェクトを可逆にしました。
+# スライドは多くても20枚
+# 可逆実行の知識は仮定しない。並行、逐次の知識は仮定する。
+# (implementation)call uncallの履歴を見れるようにする。
