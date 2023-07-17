@@ -161,6 +161,9 @@ def storeCycle(q, globalStore):
                         proxy[varName[0]][index] = value
                         globalStore[objName] = proxy
                     else:
+                        print(objName)
+                        print(varName)
+                        print(value)
                         proxy = globalStore[objName]
                         proxy[varName] = value
                         globalStore[objName] = proxy

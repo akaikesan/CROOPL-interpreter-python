@@ -14,19 +14,18 @@ class Program
         call p2::consume(b)
         call p1::produce(b)
         //Produce/consume done
-        uncall p1::produce(b)
         uncall p2::consume(b)
-        //uncall p1::generate()
-        //uncall p1::init()
-        //uncall p2::init()
+        uncall p1::produce(b)
+        uncall p1::generate()
 
-        //delete separate Buffer b
-        //delete separate Consumer p2
-        //delete separate Producer p1
+        delete separate Producer p1
+        delete separate Consumer p2
+
+        uncall b::init()
+        delete separate Buffer b
 
 class Producer
   int data
-
 
   method generate()
     data ^= 3

@@ -1,5 +1,6 @@
 import multiprocessing as mp
 import time
+import queue
 
 
 # Storeはfオブジェクトを使いたい場合、{, f:{}, ...} の形でevalStatementに渡す。
@@ -59,6 +60,17 @@ def assignVarAndGetDictByAddress(dic, p, varName, value, sep="/"):
             _(dic.get(lis[0], {}), lis[1:], sep)
     _(dic, lis, sep=sep)
 
+
+def waitUntilStackIsEmpty(globalStore,topLevelName):
+    global historyStack
+    parent_conn, child_conn = mp.Pipe()
+    globalStore[topLevelName]['#q'].put( [child_conn] )
+
+    historyNumber = parent_conn.recv()
+
+    while True:
+        if historyNumber == 0:
+            break
 
 
 
@@ -302,11 +314,14 @@ def checkVarIsSeparated(globalStore, varName ):
 
 
 def checkObjIsDeletable(varList, env):
+    print(varList)
+    print(env)
     env['type'] = 0
     for k in varList :
         if k == '#q':
            continue 
         if  not (env[k] == {} or env[k] == 0):
+
             raise Exception("you can invert-new only nil-initialized object")
 
 
@@ -475,9 +490,14 @@ def evalStatement(classMap,
                     if localStore == None:
                         # get Value
                         index = evalExp( getLocalStore(globalStore, storePath), statement[2][0][1])
-                        tmp = globalStore[envObjName][statement[2][0][0]][index]
-                        updateGlobalStore(globalStore, envObjName, statement[2][0], globalStore[envObjName][statement[3][0]])
-                        updateGlobalStore(globalStore, envObjName, statement[3][0],tmp)
+                        try:
+                            tmp = globalStore[envObjName][statement[2][0][0]][index]
+
+                            updateGlobalStore(globalStore, envObjName, statement[2][0], globalStore[envObjName][statement[3][0]])
+                            updateGlobalStore(globalStore, envObjName, statement[3][0],tmp)
+                        except:
+                            
+                            raise Exception('error')
                     else:
 
                         tmpleft = getValueByPath(globalStore, storePath, statement[2][0])
@@ -743,6 +763,7 @@ def evalStatement(classMap,
             else: 
                 # new object
                 if len(statement) == 4: 
+                    # make separated object.
                     # ['new', className, [varName], 'separate']
 
 
@@ -786,6 +807,7 @@ def evalStatement(classMap,
                         updateGlobalStoreByPath(globalStore,storePath,statement[2][0], makeStore(globalStore, storePath, classMap, statement[1]))
 
         else:
+            # not inverted
             # delete (inverted new)
             if isinstance(statement[1], list): 
                 # delete list
@@ -812,10 +834,12 @@ def evalStatement(classMap,
                     # global Scope
 
                     if len(statement) == 4:
-                        # delete separate
+                        # delete separate object.
+                        # wait until historyStack is empty
                         # get Value
                         topLevelName = globalStore[envObjName][statement[2][0]]
 
+                        waitUntilStackIsEmpty(globalStore, topLevelName)
                         checkObjIsDeletable(globalStore[topLevelName].keys(),
                                             globalStore[topLevelName])
                         ProcDict[topLevelName].terminate()
@@ -1290,6 +1314,11 @@ def interpreter(classMap,
     global ProcessRefCounter 
     ProcessRefCounter = 0
 
+    global historyStack 
+    historyStack = queue.LifoQueue()
+
+
+
     storePathWhenEval =  objName
 
     while(True):
@@ -1306,7 +1335,11 @@ def interpreter(classMap,
             # sort Request Elements
             request = q.get()
 
-            if len(request) == 2:
+            if len(request) == 1:
+                request[0].send(historyStack.qsize())
+                continue
+
+            elif len(request) == 2:
 
                 if not evalExp(globalStore[ProcessObjName], request[1]):
                     q.put(request)
@@ -1338,6 +1371,20 @@ def interpreter(classMap,
                 l = callerReference.split('/')
                 callerObjName = l[0]
                 dictAddress = '/'.join(l[:-1])
+
+
+                if callORuncall == 'uncall':
+                    methodInfo = historyStack.get()
+                    if methodInfo[0] == callerObjName and methodInfo[1] == methodName:
+                        print('attached matched')
+                        pass
+                    else:
+                        methodInfo = historyStack.put(methodInfo)
+                        q.put(request)
+                        continue
+
+
+
 
 
 
@@ -1395,6 +1442,9 @@ def interpreter(classMap,
 
                 
 
+                if callORuncall == 'call':
+                    historyStack.put([callerObjName, methodName])
+
                 request[-1].send('signal')
                 # print('send')
 
@@ -1414,6 +1464,20 @@ def interpreter(classMap,
                 callerObjName = l[0]
                 dictAddress = '/'.join(l[:-1])
 
+
+                if callORuncall == 'uncall':
+
+                    methodInfo = historyStack.get()
+                    if methodInfo[0] == callerObjName and methodInfo[1] == methodName:
+                        print('matched')
+                        print(callerObjName, methodName )
+                        print(methodInfo)
+                        pass
+                    else:
+
+                        methodInfo = historyStack.put(methodInfo)
+                        q.put(request)
+                        continue
 
                 if 'require' in classMap[className]['methods'][methodName].keys():
                     requireExp = classMap[className]['methods'][methodName]['require']
@@ -1459,7 +1523,6 @@ def interpreter(classMap,
 
 
                 if 'require' in classMap[className]['methods'][methodName].keys():
-                    print(classMap[className]['methods'][methodName].keys())
                     requireExp = classMap[className]['methods'][methodName]['require']
 
 
@@ -1472,6 +1535,9 @@ def interpreter(classMap,
                         # print('wait ensure detachable')
                         q.put(request)
                         continue
+
+                if callORuncall == 'call':
+                    historyStack.put([callerObjName, methodName])
 
             elif len(request) == 4:
 
