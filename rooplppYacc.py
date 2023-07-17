@@ -364,16 +364,30 @@ def yacc_test():
     varType = 'Program'
     varName = 'program'
     classMap[varType]['fields'][varName] = 'Program'
-    makeSeparatedStore(globalStore, m)
-    makeSeparatedProcess(classMap, varType, varName, globalStore)
+
+    storeProcess = makeSeparatedStore(globalStore, m)
+    if storeProcess == None:
+        raise Exception("storeProcess is None.")
+
+    initProcess = makeSeparatedProcess(classMap, varType, varName, globalStore)
+    if initProcess == None:
+        raise Exception("initProcess is None.")
 
     q = globalStore[varName]['#q']
 
 
 
-    # request process to run main func
-    q.put(["main", [], "call", "originProcess"])
+    parent_conn, child_conn = mp.Pipe()
 
+    # request process to run main func
+    q.put(["main", [], "call", "originProcess", child_conn])
+
+    print(parent_conn.recv())
+
+    storeProcess.terminate()
+    initProcess.terminate()
+
+'''
     while(1):
         time.sleep(2)
 
@@ -383,6 +397,7 @@ def yacc_test():
                 print('$ ' + k + ' $')
                 print(globalStore[k])
         print('-------------------------------')
+'''
 
 
 

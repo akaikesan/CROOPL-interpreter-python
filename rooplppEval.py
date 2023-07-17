@@ -297,7 +297,7 @@ def makeSeparatedProcess(classMap,
     time.sleep(0.001)
     p.start()
 
-    return 
+    return p
 
 
 
@@ -314,8 +314,6 @@ def checkVarIsSeparated(globalStore, varName ):
 
 
 def checkObjIsDeletable(varList, env):
-    print(varList)
-    print(env)
     env['type'] = 0
     for k in varList :
         if k == '#q':
@@ -1343,14 +1341,14 @@ def interpreter(classMap,
 
                 if not evalExp(globalStore[ProcessObjName], request[1]):
                     q.put(request)
-                    print('wait ensure again')
+                    #print('wait ensure again')
                     continue
 
             elif len(request) == 3:
 
                 if not evalExp(globalStore[ProcessObjName], request[1]):
                     q.put(request)
-                    print('wait ensure again')
+                    #print('wait ensure again')
                     continue
 
                 # print('send')
@@ -1376,7 +1374,7 @@ def interpreter(classMap,
                 if callORuncall == 'uncall':
                     methodInfo = historyStack.get()
                     if methodInfo[0] == callerObjName and methodInfo[1] == methodName:
-                        print('attached matched')
+                        #print('attached matched')
                         pass
                     else:
                         methodInfo = historyStack.put(methodInfo)
@@ -1469,9 +1467,7 @@ def interpreter(classMap,
 
                     methodInfo = historyStack.get()
                     if methodInfo[0] == callerObjName and methodInfo[1] == methodName:
-                        print('matched')
-                        print(callerObjName, methodName )
-                        print(methodInfo)
+                        # print('matched')
                         pass
                     else:
 
@@ -1539,17 +1535,16 @@ def interpreter(classMap,
                 if callORuncall == 'call':
                     historyStack.put([callerObjName, methodName])
 
-            elif len(request) == 4:
+            elif len(request) == 5:
 
                 methodName = request[0]
                 args = request[1]
                 callORuncall = request[2]
                 callerReference = request[3]
+                child_conn = request[4]
                 l = callerReference.split('/')
                 callerObjName = l[0]
                 dictAddress = '/'.join(l[:-1])
-
-
 
                 # detachable object's call
                 startStatement = [callORuncall,
@@ -1562,6 +1557,8 @@ def interpreter(classMap,
                           className,
                           invert,
                           storePathWhenEval)
+
+                child_conn.send('this is end')
 
 
 

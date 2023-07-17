@@ -50,10 +50,12 @@ class Buffer
         require length < 2
           buffer[length]  <=> i
           length += 1
+          print buffer
         ensure length > 0
 
     method get(int i)
         require length > 0
           length -= 1
           buffer[length] <=> i
+          print buffer
         ensure length < 2
