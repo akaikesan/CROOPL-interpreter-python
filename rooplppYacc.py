@@ -225,6 +225,7 @@ def p_statement(p):
     | DELETE SEPARATE className y
     | SKIP
     | PRINT exp
+    | PRINT STR
     | y SWAP y
     | COPY type y y
     | CALL ID WCOLON ID LPAREN anyIds RPAREN
@@ -407,16 +408,3 @@ if __name__ == '__main__':
     yacc_test()
 
 
-"""
-1. はじめに(1ページ)
-2. CROOPLPP {構文と動作意味 例:fib
-    2-1 構文
-    2-2 動作意味
-    2-3 例 fib
-3. 並行動作モデル(これに従って4の処理系を作ってます, 色々考えた絵のような説明をする.)
-    SCOOP {separate, プロセス(request queue, 引数によるロック)
-    detachable/attached(実装でどうやってるかだけ書く)
-4. 処理系と例 {例:Prod-Cons
-5. 終わりに
-長さは気にせず、構文と例と処理系の
-"""

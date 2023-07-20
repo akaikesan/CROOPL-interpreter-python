@@ -51,7 +51,6 @@ def reflectArgsAndGetDict(dic, p, result, sep="/"):
 
 def storeCycle(q, globalStore):
 
-    print("store Is Available")
 
     global m
     m = mp.Manager()

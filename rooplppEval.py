@@ -610,12 +610,21 @@ def evalStatement(classMap,
                     updateGlobalStoreByPath(globalStore,storePath,statement[2][0], result)
 
     elif (statement[0] == 'print'):
+        if statement[1][0] == '"':
+            print(statement[1][1:-1])
+            print(globalStore)
+            return
         if localStore == None:
             output = evalExp(globalStore[envObjName],statement[1])
         else:
             output = evalExp(getLocalStore(globalStore, storePath),statement[1])
 
-        print(output)
+        '''
+        for k in globalStore.keys():
+            if k != '#Store':
+                print('$ ' + k + ' $')
+                print(globalStore[k])
+        '''
 
     elif (statement[0] == 'skip'):
         pass
@@ -1558,11 +1567,7 @@ def interpreter(classMap,
                           invert,
                           storePathWhenEval)
 
-                child_conn.send('this is end')
+                child_conn.send('main method ended')
 
 
 
-# 動機：各オブジェクトを可逆にしました。
-# スライドは多くても20枚
-# 可逆実行の知識は仮定しない。並行、逐次の知識は仮定する。
-# (implementation)call uncallの履歴を見れるようにする。

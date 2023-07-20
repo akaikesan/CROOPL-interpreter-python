@@ -13,9 +13,12 @@ class Program
 
         call p2::consume(b)
         call p1::produce(b)
+
         //Produce/consume done
+
         uncall p2::consume(b)
         uncall p1::produce(b)
+
         uncall p1::generate()
 
         delete separate Producer p1
@@ -23,6 +26,7 @@ class Program
 
         uncall b::init()
         delete separate Buffer b
+
 
 class Producer
   int data
@@ -33,11 +37,13 @@ class Producer
   method produce(Buffer detachable buf)
     call buf::put(data)
 
+
 class Consumer
   int data
 
-    method consume(Buffer detachable buf)
-      call buf::get(data)
+  method consume(Buffer detachable buf)
+    call buf::get(data)
+
 
 class Buffer
     int[] buffer
@@ -48,14 +54,14 @@ class Buffer
 
     method put(int i)
         require length < 2
+          print "produce"
           buffer[length]  <=> i
           length += 1
-          print buffer
         ensure length > 0
 
     method get(int i)
         require length > 0
+          print "consume"
           length -= 1
           buffer[length] <=> i
-          print buffer
         ensure length < 2
