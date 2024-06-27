@@ -1,5 +1,6 @@
 *.out
 .venv
+venv
 parsetab.py
 python311
 __pycache__
