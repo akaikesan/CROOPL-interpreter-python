@@ -5,24 +5,42 @@ class Program
 
     method main()
         new separate Producer p1
-        new separate Consumer p2
+        new separate Producer p2
+        new separate Consumer c1
+        new separate Consumer c2
         new separate Buffer b
 
         call b::init()
+
+        // Produce|consume start 
+
         call p1::generate()
+        call p2::generate()
 
-        call p2::consume(b)
         call p1::produce(b)
+        call p2::produce(b)
 
-        //Produce/consume done
+        call c1::consume(b)
+        call c2::consume(b)
 
-        uncall p2::consume(b)
+        // Produce|consume end 
+        // uncalling produce|consume start
+
         uncall p1::produce(b)
+        uncall p2::produce(b)
+
+        uncall c1::consume(b)
+        uncall c2::consume(b)
 
         uncall p1::generate()
+        uncall p2::generate()
+
+        // uncalling produce|consume end
 
         delete separate Producer p1
-        delete separate Consumer p2
+        delete separate Producer p2
+        delete separate Consumer c1
+        delete separate Consumer c2
 
         uncall b::init()
         delete separate Buffer b
@@ -48,20 +66,25 @@ class Consumer
 class Buffer
     int[] buffer
     int length
+    int MAX
 
     method init()
-        new int[2] buffer
+        MAX += 2
+        new int[MAX] buffer
 
     method put(int i)
-        require length < 2
-          print "produce"
+        require length < MAX
           buffer[length]  <=> i
+          print "produce"
+          print buffer
           length += 1
         ensure length > 0
 
     method get(int i)
         require length > 0
-          print "consume"
           length -= 1
           buffer[length] <=> i
-        ensure length < 2
+          print "consume"
+          print buffer 
+        ensure length < MAX
+

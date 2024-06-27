@@ -390,7 +390,7 @@ def yacc_test():
 
 '''
     while(1):
-        time.sleep(2)
+        time.sleep(sys.float_info.min)
 
         print('-------------------------------')
         for k in globalStore.keys():

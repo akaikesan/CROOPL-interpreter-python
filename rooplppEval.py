@@ -1,7 +1,7 @@
 import multiprocessing as mp
 import time
+import sys 
 import queue
-
 
 # Storeはfオブジェクトを使いたい場合、{, f:{}, ...} の形でevalStatementに渡す。
 
@@ -107,6 +107,7 @@ def reflectArgsPassed(globalStore, envObjName, calledObjName, argsInfo, passedAr
 
 
 def updateGlobalStoreByPath(globalStore, storePath, varName, value):
+    
 
     q = globalStore['#Store']
 
@@ -294,7 +295,7 @@ def makeSeparatedProcess(classMap,
         ProcDict[varName] = p
 
 
-    time.sleep(0.001)
+    time.sleep(sys.float_info.min)
     p.start()
 
     return p
@@ -335,7 +336,6 @@ def checkListIsDeletable(list):
 # this is why Here use proxy ↓
 # https://stackoverflow.com/questions/26562287/value-update-in-manager-dict-not-reflected
 def updateGlobalStore(globalStore, objName, varName, value):
-
 
     q = globalStore['#Store']
 
@@ -452,6 +452,7 @@ def evalStatement(classMap,
                   invert,
                   storePath,
                   localStore = None):
+
     global ProcessRefCounter
     global ProcessObjName
 
@@ -576,6 +577,7 @@ def evalStatement(classMap,
 
 
                         tmpleft = getValueByPath(globalStore, storePath, statement[2][0])
+
                         tmpright= getValueByPath(globalStore, storePath, statement[3][0])
 
                         updateGlobalStoreByPath(globalStore,storePath,statement[3][0], tmpleft)
@@ -612,12 +614,13 @@ def evalStatement(classMap,
     elif (statement[0] == 'print'):
         if statement[1][0] == '"':
             print(statement[1][1:-1])
-            print(globalStore)
             return
         if localStore == None:
             output = evalExp(globalStore[envObjName],statement[1])
         else:
             output = evalExp(getLocalStore(globalStore, storePath),statement[1])
+
+        print(output)
 
         '''
         for k in globalStore.keys():
@@ -852,11 +855,7 @@ def evalStatement(classMap,
                         ProcDict[topLevelName].terminate()
 
                         globalStore.pop(topLevelName)
-                        updateGlobalStore(globalStore,
-                                          envObjName,
-                                          statement[2][0],
-                                          {}
-                                          )
+                        updateGlobalStore(globalStore, envObjName, statement[2][0], {})
 
                     else:
                         # delete object (not separated)
@@ -967,7 +966,7 @@ def evalStatement(classMap,
 
 
                 q = globalStore[callerObjGlobalName]['#q']
-                time.sleep(0.001)
+                time.sleep(sys.float_info.min)
 
                 callUncall = callOrUncall(invert, statement[0])
 
@@ -1341,19 +1340,20 @@ def interpreter(classMap,
 
             # sort Request Elements
             request = q.get()
+            lenReq = len(request)
 
-            if len(request) == 1:
+            if lenReq == 1:
                 request[0].send(historyStack.qsize())
                 continue
 
-            elif len(request) == 2:
+            elif lenReq == 2:
 
                 if not evalExp(globalStore[ProcessObjName], request[1]):
                     q.put(request)
                     #print('wait ensure again')
                     continue
 
-            elif len(request) == 3:
+            elif lenReq == 3:
 
                 if not evalExp(globalStore[ProcessObjName], request[1]):
                     q.put(request)
@@ -1363,9 +1363,8 @@ def interpreter(classMap,
                 # print('send')
                 request[2].send('signal')
 
-            elif len(request) == 9:
+            elif lenReq == 9:
                 # attached
-
 
                 methodName = request[0]
                 args = request[1]
@@ -1382,16 +1381,13 @@ def interpreter(classMap,
 
                 if callORuncall == 'uncall':
                     methodInfo = historyStack.get()
+
                     if methodInfo[0] == callerObjName and methodInfo[1] == methodName:
-                        #print('attached matched')
                         pass
                     else:
                         methodInfo = historyStack.put(methodInfo)
                         q.put(request)
                         continue
-
-
-
 
 
 
@@ -1456,7 +1452,7 @@ def interpreter(classMap,
                 # print('send')
 
 
-            elif len(request) == 8:
+            elif lenReq == 8:
                 # detachable
 
                 methodName = request[0]
@@ -1476,10 +1472,8 @@ def interpreter(classMap,
 
                     methodInfo = historyStack.get()
                     if methodInfo[0] == callerObjName and methodInfo[1] == methodName:
-                        # print('matched')
                         pass
                     else:
-
                         methodInfo = historyStack.put(methodInfo)
                         q.put(request)
                         continue
@@ -1544,7 +1538,8 @@ def interpreter(classMap,
                 if callORuncall == 'call':
                     historyStack.put([callerObjName, methodName])
 
-            elif len(request) == 5:
+            elif lenReq == 5:
+                # lenReq == 5 only when main method is called
 
                 methodName = request[0]
                 args = request[1]

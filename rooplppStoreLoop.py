@@ -1,5 +1,6 @@
 import multiprocessing as mp
 import time
+import sys
 from rooplppEval import evalExp, getLocalStore, getValueByPath
 
 
@@ -218,8 +219,7 @@ def storeCycle(q, globalStore):
                 request[3].send('signal')
                 
 
-
-        time.sleep(0.1)
+        time.sleep(sys.float_info.min)
 
 def makeSeparatedStore( globalStore, m):
 
@@ -229,7 +229,7 @@ def makeSeparatedStore( globalStore, m):
     globalStore['#Store'] = q
     p = mp.Process(target =  storeCycle, args = (q, globalStore))
 
-    time.sleep(0.001)
+    time.sleep(sys.float_info.min)
     p.start()
     
     return p
