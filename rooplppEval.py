@@ -318,10 +318,9 @@ def checkObjIsDeletable(varList, env):
     env['type'] = 0
     for k in varList :
         if k == '#q':
-           continue 
+            continue
         if  not (env[k] == {} or env[k] == 0):
-
-            raise Exception("you can invert-new only nil-initialized object")
+            raise Exception("you can invert-new or delete only nil-initialized object")
 
 
 
@@ -513,7 +512,7 @@ def evalStatement(classMap,
                 except:
                     raise Exception('you must input index integer for list. not String')
 
-                if localStore is None: 
+                if localStore is None:
 
 
                     if not isinstance(globalStore[envObjName][nameOfList], list):
@@ -620,7 +619,9 @@ def evalStatement(classMap,
         else:
             output = evalExp(getLocalStore(globalStore, storePath),statement[1])
 
-        print(output)
+
+        if invert:
+            print(output)
 
         '''
         for k in globalStore.keys():
@@ -673,6 +674,7 @@ def evalStatement(classMap,
 
                     else:
                         # delete object (not separated)
+
                         checkObjIsDeletable(globalStore[envObjName][statement[2][0]].keys(),
                                             globalStore[envObjName][statement[2][0]])
                         updateGlobalStore(globalStore, envObjName, statement[2][0], {})
@@ -850,6 +852,7 @@ def evalStatement(classMap,
                         topLevelName = globalStore[envObjName][statement[2][0]]
 
                         waitUntilStackIsEmpty(globalStore, topLevelName)
+
                         checkObjIsDeletable(globalStore[topLevelName].keys(),
                                             globalStore[topLevelName])
                         ProcDict[topLevelName].terminate()
@@ -860,6 +863,7 @@ def evalStatement(classMap,
                     else:
                         # delete object (not separated)
                         if isinstance(globalStore[envObjName][statement[2][0]], str) :
+
                             raise Exception("you must use sparated-delete when you delete separated object")
                         checkObjIsDeletable(globalStore[envObjName][statement[2][0]].keys(),
                                             globalStore[envObjName][statement[2][0]])
@@ -899,8 +903,8 @@ def evalStatement(classMap,
         if invert:
             pass
         else:
-            # TODO: typecheck
-            pass
+            copyFrom = evalExp(getLocalStore(globalStore, storePath), statement[3])
+            updateGlobalStoreByPath(globalStore, storePath, statement[3][0], copyFrom)
 
     elif (statement[0] == 'call' or statement[0] == 'uncall'):
         # ['call', 'tc', 'test', [args]]
@@ -1162,7 +1166,7 @@ def evalStatement(classMap,
             s1 = statement[2]
             s2 = statement[3]
 
-        if localStore is None: 
+        if localStore is None:
             result_e1 = evalExp(globalStore[envObjName], e1)
         else:
             result_e1 = evalExp(getLocalStore(globalStore, storePath), e1)
@@ -1176,16 +1180,16 @@ def evalStatement(classMap,
         # e1 -> s1 -> e2 -> s2 -> e1
         while result_e1:  # e1  e2
             for s in s1:  # s1  s1
-                evalStatement(classMap, 
-                              s, 
-                              globalStore, 
-                              envObjName, 
+                evalStatement(classMap,
+                              s,
+                              globalStore,
+                              envObjName,
                               thisType,
-                              invert, 
+                              invert,
                               storePath,
                               localStore)
 
-            if localStore is None: 
+            if localStore is None:
                 result_e2 = evalExp(globalStore[envObjName], e2)
             else:
                 result_e2 = evalExp(getLocalStore(globalStore, storePath), e2)
@@ -1200,7 +1204,7 @@ def evalStatement(classMap,
                 else:
                     stmts = s2
 
-            for s in s2:
+            for s in stmts:
                 evalStatement(classMap, 
                       s, 
                       globalStore, 
@@ -1271,16 +1275,16 @@ def evalStatement(classMap,
 
         for s in stmts:
 
-                evalStatement(classMap, 
-                      s, 
-                      globalStore, 
-                      envObjName, 
-                      thisType,
-                      invert, 
-                      storePath,
-                      localStore)
+            evalStatement(classMap,
+                  s,
+                  globalStore,
+                  envObjName,
+                  thisType,
+                  invert,
+                  storePath,
+                  localStore)
 
-        if localStore is None: 
+        if localStore is None:
             result_id2_EQ_exp2 = evalExp(globalStore[envObjName],
                                          [[id2],'=', exp2])
         else:

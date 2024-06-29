@@ -28,7 +28,7 @@ def assignVarAndGetDictByAddress(dic, p, varName, value, sep="/"):
                 index = evalExp(dic[lis[0]],varName[1])
                 dic[lis[0]][varName[0]][index] = value
             else:
-                dic[lis[0]][varName] = value 
+                dic[lis[0]][varName] = value
         else:
             _(dic.get(lis[0], {}), lis[1:], sep)
     _(dic, lis, sep=sep)
@@ -39,7 +39,7 @@ def reflectArgsAndGetDict(dic, p, result, sep="/"):
     lis = p.split(sep)
     def _(dic, lis, result, sep, default):
         if len(lis) == 0:
-            return 
+            return
         if len(lis) == 1:
             for k in result.keys():
                 dic[lis[0]][k] = result[k]

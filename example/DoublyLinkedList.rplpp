@@ -1,11 +1,3 @@
-//////////////////////////////////////////////////////////////////////////////
-// Excerpted and revised from [1, pp.161-162]
-//
-// [1] Cservenka, M.H.: Design and Implementation of Dynamic Memory Management
-//     in a Reversible Object-Oriented Programming Language, Master's thesis,
-//     Department of Computer Science, University of Copenhagen (2018).
-//////////////////////////////////////////////////////////////////////////////
-
 class Cell
   int data
   int index
@@ -80,11 +72,10 @@ class Program
     listLength += 10
 
     local int x = 0
-    from x = 0 do skip
-      loop
+      from x = 0 do skip
+        loop
         local Cell cell = nil
           new Cell cell
-
           local Cell cellCopy = nil
             copy Cell cell cellCopy
             call cell::setSelf(cellCopy)
@@ -93,9 +84,14 @@ class Program
           call cell::setData(x)
           call list::appendCell(cell)
         delocal Cell cell = nil
-      x += 1
-    until x = listLength
+        print(x)
+        x += 1
+
+      until x = listLength
+
     delocal int x = listLength
+
 
   method main()
     call makeList()
+    uncall makeList()
