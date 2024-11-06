@@ -83,7 +83,7 @@ def reflectArgsPassedSeparated(globalStore, callerObjName, objName, argsInfo, ar
     q.put(['reflectArgsPassedSeparated', callerObjName, objName, argsInfo, args, dictAddress, child_conn])
 
     parent_conn.recv()
-    # print('args reflected by path') 
+    # print('args reflected by path')
 
 
 
@@ -100,7 +100,7 @@ def reflectArgsPassed(globalStore, envObjName, calledObjName, argsInfo, passedAr
 
 
     parent_conn.recv()
-    # print('args reflected') 
+    # print('args reflected')
 
 
 
@@ -115,7 +115,7 @@ def updateGlobalStoreByPath(globalStore, storePath, varName, value):
     q.put(['updatePath', storePath, varName, value, child_conn])
 
     parent_conn.recv()
-    # print('store updated by path') 
+    # print('store updated by path')
 
 
 
@@ -129,7 +129,7 @@ def deleteVarGlobalStoreByPath(globalStore, storePath, varName):
     q.put(['deletePath', storePath, varName, child_conn])
 
     parent_conn.recv()
-    # print('store deleted by path') 
+    # print('store deleted by path')
 
 
 
@@ -143,7 +143,7 @@ def deleteVarGlobalStore(globalStore, envObjName, id1):
     q.put(['delete', envObjName, id1, child_conn])
 
     parent_conn.recv()
-    # print('store deleted') 
+    # print('store deleted')
 
 
 
@@ -342,7 +342,7 @@ def updateGlobalStore(globalStore, objName, varName, value):
     q.put(['update', objName, varName, value, child_conn])
 
     parent_conn.recv()
-    # print('store updated') 
+    # print('store updated')
 
 
 
@@ -462,7 +462,7 @@ def evalStatement(classMap,
         return
     if (statement[0] == 'assignment'): 
         # p[0] = ['assignment', p[2], p[1], p[3]]
-        # ex) x += 2+1 -> ['assignment', +=, x, 2+1] 
+        # ex) x += 2+1 -> ['assignment', +=, x, 2+1]
         if isinstance(statement[2][0], list):
             # if list Elem will be assigned
             # list <=> ?
@@ -618,7 +618,8 @@ def evalStatement(classMap,
         #print(globalStore)
         if statement[1][0] == '"':
             if statement[1] == '""':
-                print(globalStore)
+                #print(globalStore)
+                pass
             print(statement[1][1:-1])
             return
         if localStore == None:
@@ -1323,8 +1324,8 @@ def evalStatement(classMap,
 
 
 
-def interpreter(classMap, 
-                className, 
+def interpreter(classMap,
+                className,
                 objName,
                 q, 
                 globalStore):
@@ -1338,10 +1339,10 @@ def interpreter(classMap,
     m = mp.Manager()
     global ProcessObjName
     ProcessObjName = objName
-    global ProcessRefCounter 
+    global ProcessRefCounter
     ProcessRefCounter = 0
 
-    global historyStack 
+    global historyStack
     historyStack = queue.LifoQueue()
 
 
@@ -1400,6 +1401,9 @@ def interpreter(classMap,
                 dictAddress = '/'.join(l[:-1])
 
 
+
+                #print("uncalling? attached")
+                #print(request)
                 if callORuncall == 'uncall':
                     methodInfo = historyStack.get()
 
@@ -1488,13 +1492,19 @@ def interpreter(classMap,
                 callerObjName = l[0]
                 dictAddress = '/'.join(l[:-1])
 
-
                 if callORuncall == 'uncall':
 
-                    methodInfo = historyStack.get()
+                    methodInfo = []
+                    if historyStack.qsize() != 0:
+                        methodInfo = historyStack.get()
+                    else:
+                        q.put(request)
+                        continue
+
                     if methodInfo[0] == callerObjName and methodInfo[1] == methodName:
                         pass
                     else:
+
                         methodInfo = historyStack.put(methodInfo)
                         q.put(request)
                         continue

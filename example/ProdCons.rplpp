@@ -21,6 +21,9 @@ class Program
         // call p1::generate()
         // call p2::generate()
 
+        uncall p1::produce(b)
+        uncall p2::produce(b)
+
         call c1::consume(b)
         call c2::consume(b)
 
@@ -30,8 +33,6 @@ class Program
         // Produce|consume end 
         // uncalling produce|consume start
 
-        uncall p1::produce(b)
-        uncall p2::produce(b)
 
         uncall c1::consume(b)
         uncall c2::consume(b)
@@ -47,9 +48,9 @@ class Program
         delete separate Consumer c1
         delete separate Consumer c2
 
-        print ""
+        print " "
         uncall b::init()
-        print ""
+        print " "
         delete separate Buffer b
 
 
