@@ -4,7 +4,7 @@ import time
 
 from rooplppLexer import tokens
 from rooplppEval import   makeSeparatedProcess
-from rooplppStoreLoop import makeSeparatedStore 
+from rooplppStoreLoop import makeSeparatedStore
 
 classMap = {}
 
@@ -375,8 +375,6 @@ def yacc_test():
         raise Exception("initProcess is None.")
 
     q = globalStore[varName]['#q']
-
-
 
     parent_conn, child_conn = mp.Pipe()
 

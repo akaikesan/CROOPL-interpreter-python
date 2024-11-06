@@ -1,6 +1,9 @@
 class Program
     Producer p1
-    Consumer p2
+    Producer p2
+
+    Consumer c1
+    Consumer c2
     Buffer detachable b
 
     method main()
@@ -10,18 +13,19 @@ class Program
         new separate Consumer c2
         new separate Buffer b
 
+
         call b::init()
 
         // Produce|consume start 
 
-        call p1::generate()
-        call p2::generate()
-
-        call p1::produce(b)
-        call p2::produce(b)
+        // call p1::generate()
+        // call p2::generate()
 
         call c1::consume(b)
         call c2::consume(b)
+
+        call p1::produce(b)
+        call p2::produce(b)
 
         // Produce|consume end 
         // uncalling produce|consume start
@@ -32,17 +36,20 @@ class Program
         uncall c1::consume(b)
         uncall c2::consume(b)
 
-        uncall p1::generate()
-        uncall p2::generate()
+        // uncall p1::generate()
+        // uncall p2::generate()
 
         // uncalling produce|consume end
+
 
         delete separate Producer p1
         delete separate Producer p2
         delete separate Consumer c1
         delete separate Consumer c2
 
+        print ""
         uncall b::init()
+        print ""
         delete separate Buffer b
 
 
@@ -50,9 +57,12 @@ class Producer
   int data
 
   method generate()
-    data ^= 3
+    require data != 0 
+      data ^= 1
+    ensure data = 0
 
   method produce(Buffer detachable buf)
+    data ^= 3
     call buf::put(data)
 
 
@@ -77,6 +87,7 @@ class Buffer
           buffer[length]  <=> i
           print "produce"
           print buffer
+          print " "
           length += 1
         ensure length > 0
 
@@ -85,6 +96,7 @@ class Buffer
           length -= 1
           buffer[length] <=> i
           print "consume"
-          print buffer 
+          print buffer
+          print " "
         ensure length < MAX
 

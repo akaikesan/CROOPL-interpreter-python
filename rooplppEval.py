@@ -1,6 +1,6 @@
 import multiprocessing as mp
 import time
-import sys 
+import sys
 import queue
 
 # Storeはfオブジェクトを使いたい場合、{, f:{}, ...} の形でevalStatementに渡す。
@@ -174,7 +174,7 @@ def getLocalStore(dic, p, sep="/"):
         if len(lis) == 0:
             return 
         if len(lis) == 1:
-            return dic[lis[0]]
+            return dic[lis[0]].copy()
         else:
             return _(dic.get(lis[0], {}), lis[1:], sep)
     return _(dic, lis, sep=sep)
@@ -278,7 +278,7 @@ def makeSeparatedProcess(classMap,
 
     updateGlobalStore(globalStore, varName, '#q', q)
     updateGlobalStore(globalStore, varName, 'type', ObjType)
-    p = mp.Process(target = interpreter, 
+    p = mp.Process(target = interpreter,
                    args=(classMap,
                          ObjType,
                          varName,
@@ -371,7 +371,7 @@ def checkNil(object):
 
 
 def evalExp(thisStore, exp):
-    if len(exp) == 1:  
+    if len(exp) == 1:
         # [<int>] 
         if isinstance(exp[0], list):
             assert isinstance(thisStore[exp[0][0]], list)
@@ -385,7 +385,10 @@ def evalExp(thisStore, exp):
             if exp[0] == 'nil':
                 return {}
             # else exp[0] is varName
-            return thisStore[exp[0]]
+            if type(thisStore[exp[0]]) is int:
+                return thisStore[exp[0]]
+            else:
+                return thisStore[exp[0]].copy()
     else:
         if (exp[1] == '+'):
             return evalExp(thisStore, exp[0]) + evalExp(thisStore, exp[2])
@@ -540,7 +543,7 @@ def evalStatement(classMap,
 
         else:
 
-            # ['assignment', '<=>', left, right]
+            # [assignment, <=>, left, right]
             if (statement[1] == '<=>'):
                 # var <=> ? 
                 if isinstance(statement[3][0], list):
@@ -567,6 +570,7 @@ def evalStatement(classMap,
                 else:
                     # var <=> var
                     if localStore == None:
+                        
 
                         # get Value
                         tmp = globalStore[envObjName][statement[2][0]]
@@ -574,10 +578,10 @@ def evalStatement(classMap,
                         updateGlobalStore(globalStore, envObjName, statement[3][0],tmp)
                     else:
 
-
                         tmpleft = getValueByPath(globalStore, storePath, statement[2][0])
 
                         tmpright= getValueByPath(globalStore, storePath, statement[3][0])
+
 
                         updateGlobalStoreByPath(globalStore,storePath,statement[3][0], tmpleft)
                         updateGlobalStoreByPath(globalStore,storePath,statement[2][0], tmpright)
@@ -611,7 +615,10 @@ def evalStatement(classMap,
                     updateGlobalStoreByPath(globalStore,storePath,statement[2][0], result)
 
     elif (statement[0] == 'print'):
+        #print(globalStore)
         if statement[1][0] == '"':
+            if statement[1] == '""':
+                print(globalStore)
             print(statement[1][1:-1])
             return
         if localStore == None:
@@ -620,8 +627,7 @@ def evalStatement(classMap,
             output = evalExp(getLocalStore(globalStore, storePath),statement[1])
 
 
-        if invert:
-            print(output)
+        print(output)
 
         '''
         for k in globalStore.keys():
@@ -900,11 +906,22 @@ def evalStatement(classMap,
                         updateGlobalStoreByPath(globalStore,storePath,statement[2][0], {})
 
     elif (statement[0] == 'copy'):
+        #['copy', 'Cell', ['cell'], ['cellCopy']]
+
+        copyFrom = evalExp(getLocalStore(globalStore, storePath), statement[2])
+        copyTo= evalExp(getLocalStore(globalStore, storePath), statement[3])
         if invert:
-            pass
+            for k in copyTo.keys():
+                if copyFrom[k] != copyTo[k]:
+                    raise Exception("copy failed")
+                else:
+                    updateGlobalStoreByPath(globalStore, storePath, statement[3][0], {})
+
         else:
-            copyFrom = evalExp(getLocalStore(globalStore, storePath), statement[3])
-            updateGlobalStoreByPath(globalStore, storePath, statement[3][0], copyFrom)
+            if copyTo == {} or copyTo == 0: 
+                updateGlobalStoreByPath(globalStore, storePath, statement[3][0], copyFrom)
+            else:
+                raise Exception("cannot copy to non-nil object")
 
     elif (statement[0] == 'call' or statement[0] == 'uncall'):
         # ['call', 'tc', 'test', [args]]
