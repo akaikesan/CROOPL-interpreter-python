@@ -1,5 +1,6 @@
 *.out
 .venv
+Croopl
 venv
 parsetab.py
 python311
